@@ -4,6 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>⚡ MålerLog</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#00e5ff"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="MålerLog"/>
+<!-- iOS splash / ikon (SVG inline som data URL) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0a0f'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#0a0a0f;color:#ccd6f6;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;max-width:480px;margin:0 auto}
@@ -13,20 +22,22 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
 .dot{width:8px;height:8px;border-radius:50%;background:#ff6b6b;display:inline-block;transition:background .5s}
 .dot.on{background:#00e5ff;box-shadow:0 0 6px #00e5ff}
 .badge{background:#ff6b6b;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;display:none}
-.chip{background:#1a2030;border-radius:12px;padding:4px 10px;font-size:12px}
+.chip{background:#1a2030;border-radius:12px;padding:4px 10px;font-size:12px;cursor:pointer}
 .ibtn{background:none;border:none;color:#8899aa;cursor:pointer;font-size:18px;padding:4px}
 .main{padding:16px;position:relative;z-index:1;padding-bottom:90px}
 .screen{display:none}.screen.active{display:block}
 .card{background:rgba(255,255,255,.03);border:1px solid #1a2030;border-radius:12px;padding:16px;margin-bottom:12px}
 .card-tap{cursor:pointer;transition:background .15s}.card-tap:active{background:rgba(255,255,255,.06)}
-.btn{background:#00e5ff;color:#0a0a0f;border:none;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap}
+.btn{background:#00e5ff;color:#0a0a0f;border:none;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;transition:opacity .15s}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn-full{width:100%;font-size:16px;padding:14px}
 .btn-dark{background:#1a2030;border:1px solid #2a3040;color:#ccd6f6}
-.btn-ghost{background:none;border:1px solid #334;color:#8899aa;border-radius:8px;padding:10px 14px;cursor:pointer;font-size:13px}
+.btn-red{background:#ff6b6b;color:#fff}
+.btn-sm{padding:7px 12px;font-size:12px}
 .inp{background:#0f1520;border:1px solid #1e2d42;border-radius:8px;color:#eef;padding:10px 12px;font-size:15px;outline:none;width:100%}
 .inp:focus{border-color:#00e5ff}
 .inp-big{font-size:22px;font-family:'Courier New',monospace}
+.inp-pin{font-size:28px;letter-spacing:8px;text-align:center;font-family:'Courier New',monospace}
 label{display:block;color:#8899aa;font-size:12px;margin-bottom:4px}
 select.inp{cursor:pointer}
 .sdot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0}
@@ -53,21 +64,36 @@ select.inp{cursor:pointer}
 .hist-item{border-bottom:1px solid #141e2d;padding:10px 0;display:flex;justify-content:space-between;align-items:flex-start}
 .hist-item:last-child{border-bottom:none}
 .hist-thumb{width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #334;cursor:pointer;margin-top:4px}
-.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:32px;position:relative;z-index:1}
-.preset-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:300px}
-.preset-btn{background:#1a2030;border:1px solid #2a3040;color:#ccd6f6;border-radius:8px;padding:10px 18px;cursor:pointer;font-size:15px}
+.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:32px;position:relative;z-index:1}
+.user-btn{background:#1a2030;border:1px solid #2a3040;color:#ccd6f6;border-radius:10px;padding:14px 20px;cursor:pointer;font-size:15px;text-align:left;width:100%;display:flex;justify-content:space-between;align-items:center;transition:border-color .15s}
+.user-btn:hover{border-color:#00e5ff}
 .type-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .type-btn{background:#1a2030;border:1px solid #2a3040;color:#8899aa;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
 .type-btn.active{background:rgba(0,229,255,.15);border-color:#00e5ff;color:#00e5ff}
 .qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .qr-item{background:#fff;border-radius:10px;padding:14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
-.spin{display:inline-block;width:20px;height:20px;border:2px solid #1a2030;border-top-color:#00e5ff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* PIN pad */
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.pin-key{background:#1a2030;border:1px solid #2a3040;border-radius:10px;padding:16px;font-size:22px;font-weight:700;cursor:pointer;text-align:center;color:#eef;transition:background .1s}
+.pin-key:active{background:#00e5ff;color:#0a0a0f}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:16px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#1a2030;border:2px solid #334;transition:background .2s}
+.pin-dot.filled{background:#00e5ff;border-color:#00e5ff}
+/* Confirm dialog */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;padding:24px}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:#0f1520;border:1px solid #1e2d42;border-radius:16px;padding:24px;width:100%;max-width:360px}
+.confirm-title{color:#fff;font-size:18px;font-weight:700;margin-bottom:8px}
+.confirm-msg{color:#8899aa;font-size:14px;margin-bottom:20px;line-height:1.5}
+.confirm-btns{display:flex;gap:10px}
+/* Modal */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px}
 .modal.open{display:flex}
 .modal img{max-width:92vw;max-height:80vh;border-radius:10px}
-.notify{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#00e5ff;color:#0a0a0f;padding:10px 20px;border-radius:10px;font-weight:700;font-size:14px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.notify{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#00e5ff;color:#0a0a0f;padding:10px 20px;border-radius:10px;font-weight:700;font-size:14px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .notify.show{opacity:1}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #1a2030;border-top-color:#00e5ff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
 @media print{.hdr,.toolbar,.back-btn,.btn,.no-print{display:none!important}.qr-grid{grid-template-columns:repeat(3,1fr)!important}}
 </style>
 </head>
@@ -79,61 +105,63 @@ select.inp{cursor:pointer}
     <span class="badge" id="dueBadge"></span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
-    <span class="chip" id="userChip"></span>
-    <button class="ibtn" onclick="logout()">⇄</button>
+    <span class="chip" id="userChip" onclick="logout()"></span>
   </div>
 </header>
 
 <div class="main">
 
-  <!-- LOGIN -->
+  <!-- LOGIN: vælg bruger -->
   <div class="screen active" id="s-login">
     <div class="login-wrap">
       <div style="font-size:64px">⚡</div>
-      <h1 style="color:#00e5ff;font-family:'Courier New',monospace;font-size:28px;letter-spacing:2px">MålerLog</h1>
+      <h1 style="color:#00e5ff;font-family:'Courier New',monospace;font-size:26px;letter-spacing:2px">MålerLog</h1>
       <p style="color:#8899aa;font-size:14px">Hvem er du?</p>
-      <div class="preset-grid" id="presetGrid"></div>
-      <div style="display:flex;gap:8px;width:100%;max-width:280px">
-        <input class="inp" id="nameInp" placeholder="Andet navn..." onkeydown="if(event.key==='Enter')doLogin()"/>
-        <button class="btn" onclick="doLogin()">→</button>
-      </div>
+      <div style="width:100%;max-width:320px" id="userList"></div>
+    </div>
+  </div>
+
+  <!-- LOGIN: PIN -->
+  <div class="screen" id="s-pin">
+    <div class="login-wrap">
+      <div style="font-size:40px" id="pinUserIcon">👤</div>
+      <h2 style="color:#fff;font-size:20px" id="pinUserName"></h2>
+      <p style="color:#8899aa;font-size:13px">Indtast PIN-kode</p>
+      <div class="pin-dots" id="pinDots"></div>
+      <div class="pin-pad" id="pinPad"></div>
+      <button class="back-btn" style="margin-top:16px" onclick="showScreen('s-login')">← Vælg anden bruger</button>
+      <div style="color:#ff6b6b;font-size:13px;min-height:20px" id="pinError"></div>
     </div>
   </div>
 
   <!-- OPSÆTNING -->
   <div class="screen" id="s-setup">
     <h2 style="color:#00e5ff;font-size:20px;margin-bottom:8px">⚡ MålerLog — Opsætning</h2>
-    <p style="color:#8899aa;font-size:13px;margin-bottom:4px">Indsæt din Firebase-konfiguration:</p>
-    <p style="color:#556677;font-size:12px;margin-bottom:16px">Find den i Firebase Console → Tandhjul ⚙ → Project settings → General → Your apps</p>
+    <p style="color:#8899aa;font-size:13px;margin-bottom:16px">Indsæt din Firebase-konfiguration:</p>
     <div class="card">
-      <label>API Key</label>
-      <input class="inp" id="fb-apiKey" placeholder="AIzaSy..." style="margin-bottom:8px"/>
-      <label>Database URL</label>
-      <input class="inp" id="fb-dbUrl" placeholder="https://dit-projekt-default-rtdb.europe-west1.firebasedatabase.app" style="margin-bottom:8px"/>
-      <label>Project ID</label>
-      <input class="inp" id="fb-projectId" placeholder="dit-projekt" style="margin-bottom:16px"/>
+      <label>API Key</label><input class="inp" id="fb-apiKey" placeholder="AIzaSy..." style="margin-bottom:8px"/>
+      <label>Database URL</label><input class="inp" id="fb-dbUrl" placeholder="https://...firebasedatabase.app" style="margin-bottom:8px"/>
+      <label>Project ID</label><input class="inp" id="fb-projectId" placeholder="dit-projekt" style="margin-bottom:16px"/>
       <button class="btn btn-full" onclick="saveConfig()">Gem og forbind →</button>
     </div>
     <div class="card" style="background:rgba(0,229,255,.05);border-color:#00e5ff">
-      <div style="color:#00e5ff;font-weight:700;margin-bottom:6px">💡 Dine værdier fra tidligere:</div>
+      <div style="color:#00e5ff;font-weight:700;margin-bottom:8px">💡 Dine Firebase-værdier</div>
       <div style="color:#8899aa;font-size:12px;line-height:1.8">
-        API Key: <span style="color:#ccd;font-family:monospace;font-size:11px">AIzaSyAMcTE74q0t_2Z9Y0Ps20XJbGF-8GNRxAc</span><br>
-        Database URL: <span style="color:#ccd;font-family:monospace;font-size:11px">https://maalerlog-default-rtdb.europe-west1.firebasedatabase.app</span><br>
-        Project ID: <span style="color:#ccd;font-family:monospace;font-size:11px">maalerlog</span>
+        API Key: <span style="color:#ccd;font-family:monospace;font-size:10px">AIzaSyDxcXeXhHnqAisfVPiNZOSwqtb9mVsN18s</span><br>
+        Database URL: <span style="color:#ccd;font-family:monospace;font-size:10px">https://maalerlog-1d56c-default-rtdb.europe-west1.firebasedatabase.app</span><br>
+        Project ID: <span style="color:#ccd;font-family:monospace;font-size:10px">maalerlog</span>
       </div>
       <button class="btn btn-full" style="margin-top:12px;font-size:13px" onclick="autofillConfig()">✓ Brug disse værdier automatisk</button>
     </div>
   </div>
 
-  <!-- FORBINDER -->
+  <!-- LOADING / ERROR -->
   <div class="screen" id="s-loading">
-    <div style="text-align:center;padding:60px 20px;position:relative;z-index:1">
+    <div style="text-align:center;padding:60px 20px;z-index:1;position:relative">
       <div style="font-size:48px;margin-bottom:16px">⚡</div>
-      <div style="color:#00e5ff">Forbinder til cloud... <span class="spin"></span></div>
+      <div style="color:#00e5ff">Forbinder... <span class="spin"></span></div>
     </div>
   </div>
-
-  <!-- FEJL -->
   <div class="screen" id="s-error">
     <div style="text-align:center;padding:60px 20px">
       <div style="font-size:48px">❌</div>
@@ -161,11 +189,12 @@ select.inp{cursor:pointer}
     <button class="back-btn" onclick="showScreen('s-dash')">← Tilbage</button>
     <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">
       <span style="font-size:44px" id="mIcon"></span>
-      <div>
+      <div style="flex:1">
         <h2 style="color:#fff;font-size:19px;margin:0 0 2px" id="mName"></h2>
         <div style="color:#8899aa;font-size:13px" id="mLoc"></div>
         <div style="color:#445566;font-size:11px;font-family:monospace" id="mId"></div>
       </div>
+      <button class="btn btn-sm" style="background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid #ff6b6b" onclick="confirmDeleteMeter()">🗑</button>
     </div>
     <div class="card" id="mStatus"></div>
     <div class="card" style="text-align:center">
@@ -222,9 +251,17 @@ select.inp{cursor:pointer}
   <div class="screen" id="s-settings">
     <button class="back-btn" onclick="showScreen('s-dash')">← Tilbage</button>
     <h2 style="color:#fff;font-size:19px;margin-bottom:14px">⚙ Indstillinger</h2>
+
+    <!-- Brugere -->
+    <div class="sec">👤 Brugere</div>
+    <div id="userSettList"></div>
+    <button class="btn btn-dark btn-full" onclick="showAddUser()" style="margin-bottom:20px">➕ Tilføj bruger</button>
+
+    <!-- Målere -->
+    <div class="sec">⚡ Målere</div>
     <select class="inp" id="settLocF" onchange="renderSettings()" style="margin-bottom:14px"></select>
     <div id="settList"></div>
-    <button class="btn btn-full" onclick="saveSettings()" style="margin-top:4px">Gem ændringer</button>
+    <button class="btn btn-full" onclick="saveSettings()" style="margin-top:4px">Gem måler-ændringer</button>
   </div>
 
   <!-- TILFØJ MÅLER -->
@@ -240,8 +277,26 @@ select.inp{cursor:pointer}
       <button class="btn btn-full" onclick="addMeter()">Tilføj måler</button>
     </div>
   </div>
+
+  <!-- TILFØJ/REDIGER BRUGER -->
+  <div class="screen" id="s-adduser">
+    <button class="back-btn" onclick="showSett()">← Tilbage</button>
+    <h2 style="color:#fff;font-size:19px;margin-bottom:14px" id="addUserTitle">➕ Tilføj bruger</h2>
+    <div class="card">
+      <label>Navn *</label><input class="inp" id="auName" placeholder="fx Anders" style="margin-bottom:8px"/>
+      <label>PIN-kode (4 cifre) *</label><input class="inp inp-pin" id="auPin" type="number" placeholder="••••" maxlength="4" style="margin-bottom:8px"/>
+      <label>Rolle</label>
+      <select class="inp" id="auRole" style="margin-bottom:16px">
+        <option value="user">Bruger — kan aflæse målere</option>
+        <option value="admin">Admin — kan også redigere og slette</option>
+      </select>
+      <button class="btn btn-full" id="auSaveBtn" onclick="saveUser()">Gem bruger</button>
+    </div>
+  </div>
+
 </div>
 
+<!-- Toolbar -->
 <div class="toolbar" id="mainToolbar" style="display:none">
   <button class="tbar-btn active" id="tb-dash" onclick="showScreen('s-dash')"><span>🏠</span><span>Oversigt</span></button>
   <button class="tbar-btn" id="tb-hist" onclick="showHist()"><span>📊</span><span>Historik</span></button>
@@ -250,6 +305,19 @@ select.inp{cursor:pointer}
   <button class="tbar-btn" id="tb-sett" onclick="showSett()"><span>⚙</span><span>Indst.</span></button>
 </div>
 
+<!-- Confirm dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Er du sikker?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="btn btn-dark" style="flex:1" onclick="closeConfirm()">Annuller</button>
+      <button class="btn btn-red" style="flex:1" id="confirmOkBtn">Slet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image modal -->
 <div class="modal" id="imgModal" onclick="this.classList.remove('open')">
   <img id="modalImg" src="" alt=""/>
   <div style="color:#8899aa;font-size:13px">Tryk for at lukke</div>
@@ -258,137 +326,189 @@ select.inp{cursor:pointer}
 
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
-// FIREBASE REST API — virker fra lokal fil, ingen SDK nødvendig
+// STATE
 // ══════════════════════════════════════════════════════════════════════════════
-let FB_URL = "", FB_KEY = "", FB_PROJECT = "";
-let meters = [], readings = [], currentUser = "", activeMeter = null, activeLoc = "Alle", capturedImg = null, editMeters = [], pollTimer = null;
+let FB_URL="", FB_KEY="";
+let meters=[], readings=[], users=[];
+let currentUser=null, activeMeter=null, activeLoc="Alle", capturedImg=null, editMeters=[];
+let pinBuffer="", pinTarget=null, editingUserId=null;
 
-const TYPES = [{type:"El",icon:"⚡",unit:"kWh"},{type:"Varme",icon:"🔥",unit:"GJ"},{type:"Vand",icon:"💧",unit:"m³"},{type:"Flow",icon:"🌊",unit:"m³/h"},{type:"Gas",icon:"💨",unit:"m³"},{type:"Andet",icon:"📟",unit:""}];
-let selType = TYPES[0];
-const PRESETS = ["Anders","Mette","Lars","Sofie","Jens","Lone","Thomas","Hanne"];
+const TYPES=[{type:"El",icon:"⚡",unit:"kWh"},{type:"Varme",icon:"🔥",unit:"GJ"},{type:"Vand",icon:"💧",unit:"m³"},{type:"Flow",icon:"🌊",unit:"m³/h"},{type:"Gas",icon:"💨",unit:"m³"},{type:"Andet",icon:"📟",unit:""}];
+let selType=TYPES[0];
 
-const DEFAULT_METERS = [
-  {id:"el-hal-a",   name:"El-måler",   type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Hal A"},
-  {id:"vand-hal-a", name:"Vandmåler",  type:"Vand", unit:"m³",   intervalDays:7, icon:"💧",location:"Hal A"},
-  {id:"el-hal-b",   name:"El-måler",   type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Hal B"},
-  {id:"varme-hal-b",name:"Varmemåler", type:"Varme",unit:"GJ",   intervalDays:30,icon:"🔥",location:"Hal B"},
-  {id:"el-kontor",  name:"El-måler",   type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Kontor"},
-  {id:"vand-kontor",name:"Vandmåler",  type:"Vand", unit:"m³",   intervalDays:7, icon:"💧",location:"Kontor"},
-  {id:"flow-mask1", name:"Flowmåler",  type:"Flow", unit:"m³/h", intervalDays:14,icon:"🌊",location:"Maskinrum 1"},
-  {id:"el-kant",    name:"El-måler",   type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Kantine"},
-  {id:"vand-kant",  name:"Vandmåler",  type:"Vand", unit:"m³",   intervalDays:7, icon:"💧",location:"Kantine"},
-  {id:"varme-kant", name:"Varmemåler", type:"Varme",unit:"GJ",   intervalDays:30,icon:"🔥",location:"Kantine"},
+const DEFAULT_METERS=[
+  {id:"el-hal-a",   name:"El-måler",  type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Hal A"},
+  {id:"vand-hal-a", name:"Vandmåler", type:"Vand", unit:"m³",   intervalDays:7, icon:"💧",location:"Hal A"},
+  {id:"el-hal-b",   name:"El-måler",  type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Hal B"},
+  {id:"varme-hal-b",name:"Varmemåler",type:"Varme",unit:"GJ",   intervalDays:30,icon:"🔥",location:"Hal B"},
+  {id:"el-kontor",  name:"El-måler",  type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Kontor"},
+  {id:"vand-kontor",name:"Vandmåler", type:"Vand", unit:"m³",   intervalDays:7, icon:"💧",location:"Kontor"},
+  {id:"flow-mask1", name:"Flowmåler", type:"Flow", unit:"m³/h", intervalDays:14,icon:"🌊",location:"Maskinrum 1"},
+  {id:"el-kant",    name:"El-måler",  type:"El",   unit:"kWh",  intervalDays:30,icon:"⚡",location:"Kantine"},
+  {id:"vand-kant",  name:"Vandmåler", type:"Vand", unit:"m³",   intervalDays:7, icon:"💧",location:"Kantine"},
+  {id:"varme-kant", name:"Varmemåler",type:"Varme",unit:"GJ",   intervalDays:30,icon:"🔥",location:"Kantine"},
+];
+
+const DEFAULT_USERS=[
+  {id:"user-stefan",name:"Stefan",pin:"1234",role:"admin",icon:"👤"},
+  {id:"user-anders",name:"Anders",pin:"1111",role:"user", icon:"👤"},
+  {id:"user-mette", name:"Mette", pin:"2222",role:"user", icon:"👤"},
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const daysSince = d => !d?Infinity:Math.floor((Date.now()-new Date(d))/86400000);
-const fmt = iso => !iso?"—":new Date(iso).toLocaleString("da-DK",{dateStyle:"short",timeStyle:"short"});
-const lastR = id => [...readings].filter(r=>r.meterId===id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0]||null;
-const isDue = m => {const lr=lastR(m.id);return !lr||daysSince(lr.date)>=m.intervalDays;};
-const locs = () => ["Alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
-const qrUrl = (id,s=150) => `https://api.qrserver.com/v1/create-qr-code/?size=${s}x${s}&data=${encodeURIComponent("meter:"+id)}&bgcolor=ffffff&color=000000&margin=4`;
+const daysSince=d=>!d?Infinity:Math.floor((Date.now()-new Date(d))/86400000);
+const fmt=iso=>!iso?"—":new Date(iso).toLocaleString("da-DK",{dateStyle:"short",timeStyle:"short"});
+const lastR=id=>[...readings].filter(r=>r.meterId===id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0]||null;
+const isDue=m=>{const lr=lastR(m.id);return !lr||daysSince(lr.date)>=m.intervalDays;};
+const locs=()=>["Alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
+const qrUrl=(id,s=150)=>`https://api.qrserver.com/v1/create-qr-code/?size=${s}x${s}&data=${encodeURIComponent("meter:"+id)}&bgcolor=ffffff&color=000000&margin=4`;
+const isAdmin=()=>currentUser?.role==="admin";
 
-function notify(msg) {
+function notify(msg){
   const el=document.getElementById('notify');
-  el.textContent=msg; el.classList.add('show');
+  el.textContent=msg;el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),2500);
 }
 
 // ── Firebase REST ─────────────────────────────────────────────────────────────
-async function fbGet(path) {
-  const r = await fetch(`${FB_URL}/${path}.json?auth=${FB_KEY}`);
-  if(!r.ok) throw new Error(r.status);
+async function fbGet(path){
+  const r=await fetch(`${FB_URL}/${path}.json`);
+  if(!r.ok)throw new Error(r.status);
   return r.json();
 }
-async function fbSet(path, data) {
-  const r = await fetch(`${FB_URL}/${path}.json?auth=${FB_KEY}`,{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
-  if(!r.ok) throw new Error(r.status);
+async function fbSet(path,data){
+  const r=await fetch(`${FB_URL}/${path}.json`,{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
+  if(!r.ok)throw new Error(r.status);
   return r.json();
 }
-async function fbPush(path, data) {
-  const r = await fetch(`${FB_URL}/${path}.json?auth=${FB_KEY}`,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
-  if(!r.ok) throw new Error(r.status);
+async function fbPush(path,data){
+  const r=await fetch(`${FB_URL}/${path}.json`,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
+  if(!r.ok)throw new Error(r.status);
   return r.json();
+}
+async function fbDelete(path){
+  const r=await fetch(`${FB_URL}/${path}.json`,{method:"DELETE"});
+  if(!r.ok)throw new Error(r.status);
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
 function loadConfig(){try{return JSON.parse(localStorage.getItem("mlog_cfg"));}catch{return null;}}
-function saveConfig2(c){localStorage.setItem("mlog_cfg",JSON.stringify(c));}
 function clearConfig(){localStorage.removeItem("mlog_cfg");location.reload();}
-
 function autofillConfig(){
-  document.getElementById('fb-apiKey').value="AIzaSyAMcTE74q0t_2Z9Y0Ps20XJbGF-8GNRxAc";
-  document.getElementById('fb-dbUrl').value="https://maalerlog-default-rtdb.europe-west1.firebasedatabase.app";
-  document.getElementById('fb-projectId').value="maalerlog";
+  document.getElementById('fb-apiKey').value="AIzaSyDxcXeXhHnqAisfVPiNZOSwqtb9mVsN18s";
+  document.getElementById('fb-dbUrl').value="https://maalerlog-1d56c-default-rtdb.europe-west1.firebasedatabase.app";
+  document.getElementById('fb-projectId').value="maalerlog-1d56c";
   saveConfig();
 }
-
 function saveConfig(){
   const key=document.getElementById('fb-apiKey').value.trim();
   const url=document.getElementById('fb-dbUrl').value.trim();
-  const pid=document.getElementById('fb-projectId').value.trim();
-  if(!key||!url||!pid){alert("Udfyld alle felter");return;}
-  saveConfig2({key,url,pid});
+  if(!key||!url){alert("Udfyld alle felter");return;}
+  localStorage.setItem("mlog_cfg",JSON.stringify({key,url}));
   location.reload();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init(){
-  document.getElementById('presetGrid').innerHTML=PRESETS.map(p=>`<button class="preset-btn" onclick="loginAs('${p}')">${p}</button>`).join('');
   document.getElementById('typeGrid').innerHTML=TYPES.map(t=>`<button class="type-btn${t.type===selType.type?' active':''}" onclick="selectType('${t.type}')">${t.icon} ${t.type}</button>`).join('');
   document.getElementById('addUnit').value=selType.unit;
+  buildPinPad();
 
   const cfg=loadConfig();
   if(!cfg){showScreen('s-setup');return;}
-
-  FB_KEY=cfg.key; FB_URL=cfg.url; FB_PROJECT=cfg.pid;
+  FB_URL=cfg.url; FB_KEY=cfg.key;
   showScreen('s-loading');
 
-  try {
-    // Hent målere
-    let mData = await fbGet("meters");
-    if(!mData){
-      // Første gang — skriv default målere
-      const obj={};DEFAULT_METERS.forEach(m=>{obj[m.id]=m;});
-      await fbSet("meters",obj);
-      mData=obj;
-    }
+  try{
+    // Meters
+    let mData=await fbGet("meters");
+    if(!mData){const obj={};DEFAULT_METERS.forEach(m=>{obj[m.id]=m;});await fbSet("meters",obj);mData=obj;}
     meters=Object.values(mData);
 
-    // Hent aflæsninger
-    const rData = await fbGet("readings");
+    // Readings
+    const rData=await fbGet("readings");
     readings=rData?Object.values(rData):[];
 
+    // Users
+    let uData=await fbGet("users");
+    if(!uData){const obj={};DEFAULT_USERS.forEach(u=>{obj[u.id]=u;});await fbSet("users",obj);uData=obj;}
+    users=Object.values(uData);
+
     document.getElementById('connDot').classList.add('on');
-    currentUser=localStorage.getItem("mlog_user")||"";
-    if(currentUser){afterLogin();}else{showScreen('s-login');}
-
-    // Poll hvert 30 sek for opdateringer
-    pollTimer=setInterval(pollData,30000);
-
-  } catch(e){
-    console.error(e);
-    showScreen('s-error');
-  }
+    renderLoginScreen();
+    showScreen('s-login');
+    setInterval(pollData,30000);
+  }catch(e){console.error(e);showScreen('s-error');}
 }
 
 async function pollData(){
-  try {
-    const mData=await fbGet("meters");
-    if(mData) meters=Object.values(mData);
-    const rData=await fbGet("readings");
-    readings=rData?Object.values(rData):[];
-    render();
-  } catch(e){}
+  try{
+    const mData=await fbGet("meters");if(mData)meters=Object.values(mData);
+    const rData=await fbGet("readings");readings=rData?Object.values(rData):[];
+    const uData=await fbGet("users");if(uData)users=Object.values(uData);
+    if(currentUser)render();
+  }catch(e){}
 }
 
-// ── Login ─────────────────────────────────────────────────────────────────────
-function loginAs(name){currentUser=name;localStorage.setItem("mlog_user",name);afterLogin();}
-function doLogin(){const n=document.getElementById('nameInp').value.trim();if(n)loginAs(n);}
-function logout(){currentUser="";localStorage.removeItem("mlog_user");showScreen('s-login');document.getElementById('mainToolbar').style.display='none';}
-function afterLogin(){document.getElementById('userChip').textContent="👤 "+currentUser;document.getElementById('mainToolbar').style.display='flex';showScreen('s-dash');render();}
+// ── LOGIN + PIN ───────────────────────────────────────────────────────────────
+function renderLoginScreen(){
+  document.getElementById('userList').innerHTML=users.map(u=>`
+    <button class="user-btn" onclick="startPin('${u.id}')">
+      <span>${u.icon||"👤"} ${u.name}</span>
+      <span style="color:#556677;font-size:12px">${u.role==="admin"?"⭐ Admin":"Bruger"}</span>
+    </button>`).join('');
+}
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+function startPin(userId){
+  pinTarget=users.find(u=>u.id===userId);
+  if(!pinTarget)return;
+  pinBuffer="";
+  document.getElementById('pinUserName').textContent=pinTarget.name;
+  document.getElementById('pinError').textContent="";
+  updatePinDots();
+  showScreen('s-pin');
+}
+
+function buildPinPad(){
+  const keys=["1","2","3","4","5","6","7","8","9","","0","⌫"];
+  document.getElementById('pinDots').innerHTML=[0,1,2,3].map(i=>`<div class="pin-dot" id="pd${i}"></div>`).join('');
+  document.getElementById('pinPad').innerHTML=keys.map(k=>k===""?`<div></div>`:`<button class="pin-key" onclick="pinKey('${k}')">${k}</button>`).join('');
+}
+
+function pinKey(k){
+  if(k==="⌫"){pinBuffer=pinBuffer.slice(0,-1);}
+  else if(pinBuffer.length<4){pinBuffer+=k;}
+  updatePinDots();
+  if(pinBuffer.length===4)setTimeout(checkPin,200);
+}
+
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('pd'+i);
+    if(el)el.classList.toggle('filled',i<pinBuffer.length);
+  }
+}
+
+function checkPin(){
+  if(pinBuffer===String(pinTarget.pin)){
+    currentUser=pinTarget;
+    localStorage.setItem("mlog_user",pinTarget.id);
+    afterLogin();
+  }else{
+    document.getElementById('pinError').textContent="Forkert PIN — prøv igen";
+    pinBuffer="";updatePinDots();
+  }
+}
+
+function logout(){currentUser=null;localStorage.removeItem("mlog_user");document.getElementById('mainToolbar').style.display='none';renderLoginScreen();showScreen('s-login');}
+
+function afterLogin(){
+  document.getElementById('userChip').textContent="👤 "+currentUser.name+" ⇄";
+  document.getElementById('mainToolbar').style.display='flex';
+  showScreen('s-dash');render();
+}
+
+// ── Screens ───────────────────────────────────────────────────────────────────
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -402,14 +522,12 @@ function showScreen(id){
 function render(){
   if(!currentUser)return;
   const due=meters.filter(isDue).length;
-  const b=document.getElementById('dueBadge');
-  b.textContent=due;b.style.display=due>0?'':'none';
+  const b=document.getElementById('dueBadge');b.textContent=due;b.style.display=due>0?'':'none';
   renderDash();renderQRFilters();renderHistFilters();renderSettFilters();
 }
 
 function renderDash(){
   const ls=locs();
-  // Loc chips
   document.getElementById('locGrid').innerHTML=ls.filter(l=>l!=="Alle").map(loc=>{
     const ms=meters.filter(m=>m.location===loc),d=ms.filter(isDue).length;
     return `<div class="loc-chip${activeLoc===loc?' active':''}" onclick="setLoc('${loc}')" style="border-color:${d>0?'#ff6b6b':'#00e5ff'}">
@@ -420,12 +538,10 @@ function renderDash(){
       </div>
     </div>`;
   }).join('');
-  // Tabs
   document.getElementById('locTabs').innerHTML=ls.map(loc=>{
     const n=loc!=="Alle"?meters.filter(m=>m.location===loc&&isDue(m)).length:0;
     return `<button class="tab${activeLoc===loc?' active':''}" onclick="setLoc('${loc}')">${loc}${n>0?`<span style="background:#ff6b6b;color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:4px">${n}</span>`:''}</button>`;
   }).join('');
-  // List
   const filtered=activeLoc==="Alle"?meters:meters.filter(m=>m.location===activeLoc);
   const due=filtered.filter(isDue),ok=filtered.filter(m=>!isDue(m));
   let html='';
@@ -451,7 +567,6 @@ function mCardHTML(m){
     </div>
   </div>`;
 }
-
 function setLoc(loc){activeLoc=loc;renderDash();}
 
 // ── Open Meter ────────────────────────────────────────────────────────────────
@@ -466,8 +581,10 @@ function openMeter(id){
   document.getElementById('valInp').value='';
   document.getElementById('noteInp').value='';
   document.getElementById('imgArea').innerHTML='';
-  document.getElementById('readingMeta').textContent=`Aflæser: ${currentUser} · ${new Date().toLocaleString('da-DK')}`;
+  document.getElementById('readingMeta').textContent=`Aflæser: ${currentUser.name} · ${new Date().toLocaleString('da-DK')}`;
   document.getElementById('mQR').src=qrUrl(m.id);
+  // Slet-knap kun for admin
+  document.querySelector('#s-meter .btn-sm').style.display=isAdmin()?'':'none';
   const lr=lastR(m.id),due=isDue(m);
   const mStat=document.getElementById('mStatus');
   mStat.innerHTML=due?`<div style="text-align:center"><div style="font-size:28px">⚠️</div><div style="color:#ff6b6b;font-weight:700">Aflæsning ønsket</div>${lr?`<div style="color:#8899aa;font-size:12px;margin-top:4px">Sidst: ${fmt(lr.date)} af ${lr.user}</div>`:''}</div>`:`<div style="text-align:center"><div style="font-size:28px">✅</div><div style="color:#00e5ff;font-weight:700">Aflæst – OK</div>${lr?`<div style="color:#8899aa;font-size:12px;margin-top:4px">Sidst: ${fmt(lr.date)} af ${lr.user}</div>`:''}</div>`;
@@ -477,7 +594,7 @@ function openMeter(id){
   const hEl=document.getElementById('mHistory');
   if(rs.length){
     hEl.style.display='block';
-    document.getElementById('mHistList').innerHTML=rs.map((r,i)=>`<div class="hist-item">
+    document.getElementById('mHistList').innerHTML=rs.map(r=>`<div class="hist-item">
       <div><span style="color:#fff;font-weight:700;font-family:monospace">${r.value} ${m.unit}</span> <span style="color:#8899aa;font-size:12px">af ${r.user}</span>${r.note?`<div style="color:#667788;font-size:11px">${r.note}</div>`:''}</div>
       <div style="text-align:right"><div style="color:#556677;font-size:11px">${fmt(r.date)}</div>${r.imageUrl?`<img src="${r.imageUrl}" class="hist-thumb" onclick="document.getElementById('imgModal').classList.add('open');document.getElementById('modalImg').src='${r.imageUrl}'">`:''}
       </div></div>`).join('');
@@ -485,6 +602,33 @@ function openMeter(id){
   showScreen('s-meter');
 }
 function openByManual(){const id=document.getElementById('manualId').value.trim();if(id)openMeter(id);}
+
+// ── Delete Meter ──────────────────────────────────────────────────────────────
+function confirmDeleteMeter(){
+  openConfirm(
+    `🗑 Slet måler`,
+    `Er du sikker på du vil slette måleren "${activeMeter.name}" (${activeMeter.location})?\n\nAlle aflæsninger for denne måler slettes også.`,
+    async()=>{
+      try{
+        await fbDelete(`meters/${activeMeter.id}`);
+        meters=meters.filter(m=>m.id!==activeMeter.id);
+        notify("✓ Måler slettet");
+        showScreen('s-dash');render();
+      }catch{alert("Fejl ved sletning");}
+    }
+  );
+}
+
+// ── Confirm dialog ────────────────────────────────────────────────────────────
+let confirmCallback=null;
+function openConfirm(title,msg,onOk){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  confirmCallback=onOk;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');confirmCallback=null;}
+document.getElementById('confirmOkBtn').onclick=()=>{closeConfirm();if(confirmCallback)confirmCallback();};
 
 // ── Photo + AI ────────────────────────────────────────────────────────────────
 async function handlePhoto(input){
@@ -494,27 +638,15 @@ async function handlePhoto(input){
     const url=ev.target.result;capturedImg=url;
     document.getElementById('imgArea').innerHTML=`<div class="img-wrap"><img src="${url}" alt="Måler"/><div class="ai-ov" id="aiOv">🤖 AI aflæser tal...</div></div>`;
     try{
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:80,
-          messages:[{role:"user",content:[
-            {type:"image",source:{type:"base64",media_type:"image/jpeg",data:url.split(",")[1]}},
-            {type:"text",text:"Read the main number on this meter display. Reply with ONLY the number. If unclear: UKENDT"}
-          ]}]})
-      });
+          messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:url.split(",")[1]}},{type:"text",text:"Read the main number on this meter display. Reply with ONLY the number. If unclear: UKENDT"}]}]})});
       const d=await resp.json();
       const t=d.content?.map(b=>b.text||"").join("").trim().replace(",",".");
       document.getElementById('aiOv')?.remove();
-      if(t&&t!=="UKENDT"){
-        document.getElementById('valInp').value=t;
-        document.getElementById('imgArea').innerHTML+=`<div class="ai-res">✅ AI fandt: <strong>${t} ${activeMeter?.unit||""}</strong> — kontrollér og gem</div>`;
-      }else{
-        document.getElementById('imgArea').innerHTML+=`<div class="ai-err">⚠ AI kunne ikke aflæse — indtast manuelt</div>`;
-      }
-    }catch{
-      document.getElementById('aiOv')?.remove();
-      document.getElementById('imgArea').innerHTML+=`<div class="ai-err">⚠ AI ikke tilgængelig — indtast manuelt</div>`;
-    }
+      if(t&&t!=="UKENDT"){document.getElementById('valInp').value=t;document.getElementById('imgArea').innerHTML+=`<div class="ai-res">✅ AI fandt: <strong>${t} ${activeMeter?.unit||""}</strong> — kontrollér og gem</div>`;}
+      else{document.getElementById('imgArea').innerHTML+=`<div class="ai-err">⚠ AI kunne ikke aflæse — indtast manuelt</div>`;}
+    }catch{document.getElementById('aiOv')?.remove();document.getElementById('imgArea').innerHTML+=`<div class="ai-err">⚠ AI ikke tilgængelig — indtast manuelt</div>`;}
   };
   reader.readAsDataURL(file);
 }
@@ -524,39 +656,26 @@ async function saveReading(){
   const val=document.getElementById('valInp').value.trim();
   const note=document.getElementById('noteInp').value.trim();
   if(!val||!activeMeter)return;
-  document.getElementById('saveBtn').textContent='Gemmer... ';
-  document.getElementById('saveBtn').disabled=true;
+  const btn=document.getElementById('saveBtn');btn.textContent='Gemmer...';btn.disabled=true;
   try{
-    const reading={meterId:activeMeter.id,value:val,note,user:currentUser,date:new Date().toISOString(),imageUrl:capturedImg||null};
+    const reading={meterId:activeMeter.id,value:val,note,user:currentUser.name,date:new Date().toISOString(),imageUrl:capturedImg||null};
     const res=await fbPush("readings",reading);
     readings.push({...reading,id:res.name});
-    notify("✓ Aflæsning gemt!");
-    showScreen('s-dash');
-    render();
-  }catch(e){
-    alert("Fejl ved gemning — tjek din forbindelse");
-  }finally{
-    document.getElementById('saveBtn').textContent='✓ Gem aflæsning';
-    document.getElementById('saveBtn').disabled=false;
-  }
+    notify("✓ Aflæsning gemt!");showScreen('s-dash');render();
+  }catch{alert("Fejl ved gemning");}
+  finally{btn.textContent='✓ Gem aflæsning';btn.disabled=false;}
 }
 
 // ── QR ────────────────────────────────────────────────────────────────────────
 function renderQRFilters(){
   const ls=["alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
   document.getElementById('qrLocF').innerHTML=ls.map(l=>`<option value="${l}">${l==="alle"?"Alle lokationer":l}</option>`).join('');
+  renderQRGrid();
 }
 function renderQRGrid(){
   const f=document.getElementById('qrLocF')?.value||"alle";
   const list=f==="alle"?meters:meters.filter(m=>m.location===f);
-  document.getElementById('qrGrid').innerHTML=list.map(m=>`
-    <div class="qr-item">
-      <img src="${qrUrl(m.id,140)}" alt="QR" style="width:140px;height:140px"/>
-      <div style="font-size:20px">${m.icon}</div>
-      <div style="color:#111;font-weight:700;font-size:13px">${m.name}</div>
-      <div style="color:#555;font-size:11px">${m.location}</div>
-      <div style="color:#aaa;font-size:9px;font-family:monospace">${m.id}</div>
-    </div>`).join('');
+  document.getElementById('qrGrid').innerHTML=list.map(m=>`<div class="qr-item"><img src="${qrUrl(m.id,140)}" alt="QR" style="width:140px;height:140px"/><div style="font-size:20px">${m.icon}</div><div style="color:#111;font-weight:700;font-size:13px">${m.name}</div><div style="color:#555;font-size:11px">${m.location}</div><div style="color:#aaa;font-size:9px;font-family:monospace">${m.id}</div></div>`).join('');
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -574,17 +693,15 @@ function renderHistory(){
     .filter(r=>{if(fL==="alle")return true;const m=meters.find(x=>x.id===r.meterId);return m?.location===fL;});
   document.getElementById('histList').innerHTML=!rows.length?`<div style="color:#8899aa;text-align:center;padding:40px">Ingen aflæsninger</div>`:rows.map(r=>{
     const m=meters.find(x=>x.id===r.meterId)||{};
-    return `<div class="card" style="border-left:3px solid #00e5ff">
-      <div style="display:flex;justify-content:space-between">
-        <div><div style="color:#ccd;font-weight:700">${m.icon||""} ${m.name||r.meterId} <span style="color:#556677;font-size:12px">· ${m.location||""}</span></div>
-        <div style="color:#fff;font-family:monospace;font-size:17px;margin:4px 0">${r.value} <span style="color:#8899aa;font-size:12px">${m.unit||""}</span></div>
-        <div style="color:#8899aa;font-size:12px">👤 ${r.user}</div>${r.note?`<div style="color:#667788;font-size:12px">${r.note}</div>`:''}</div>
-        <div style="text-align:right"><div style="color:#556677;font-size:12px">${fmt(r.date)}</div>
-        ${r.imageUrl?`<img src="${r.imageUrl}" class="hist-thumb" onclick="document.getElementById('imgModal').classList.add('open');document.getElementById('modalImg').src='${r.imageUrl}'">`:''}
-        </div></div></div>`;
+    return `<div class="card" style="border-left:3px solid #00e5ff"><div style="display:flex;justify-content:space-between">
+      <div><div style="color:#ccd;font-weight:700">${m.icon||""} ${m.name||r.meterId} <span style="color:#556677;font-size:12px">· ${m.location||""}</span></div>
+      <div style="color:#fff;font-family:monospace;font-size:17px;margin:4px 0">${r.value} <span style="color:#8899aa;font-size:12px">${m.unit||""}</span></div>
+      <div style="color:#8899aa;font-size:12px">👤 ${r.user}</div>${r.note?`<div style="color:#667788;font-size:12px">${r.note}</div>`:''}</div>
+      <div style="text-align:right"><div style="color:#556677;font-size:12px">${fmt(r.date)}</div>
+      ${r.imageUrl?`<img src="${r.imageUrl}" class="hist-thumb" onclick="document.getElementById('imgModal').classList.add('open');document.getElementById('modalImg').src='${r.imageUrl}'">`:''}
+      </div></div></div>`;
   }).join('');
 }
-
 function exportCSV(){
   const rows=[...readings].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>{
     const m=meters.find(x=>x.id===r.meterId)||{};
@@ -592,12 +709,16 @@ function exportCSV(){
   });
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob(["\uFEFF"+"Måler ID,Navn,Lokation,Enhed,Aflæst af,Dato,Værdi,Note,Billede\n"+rows.join("\n")],{type:"text/csv;charset=utf-8;"}));
-  a.download=`maalerdata_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  a.download=`maalerdata_${new Date().toISOString().slice(0,10)}.csv`;a.click();
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function showSett(){editMeters=meters.map(m=>({...m}));renderSettFilters();renderSettings();showScreen('s-settings');}
+function showSett(){
+  if(!isAdmin()){alert("Kun admin kan ændre indstillinger");return;}
+  editMeters=meters.map(m=>({...m}));
+  renderSettFilters();renderSettings();renderUserSettings();
+  showScreen('s-settings');
+}
 function renderSettFilters(){
   const ls=["alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
   document.getElementById('settLocF').innerHTML=ls.map(l=>`<option value="${l}">${l==="alle"?"Alle lokationer":l}</option>`).join('');
@@ -616,14 +737,69 @@ function renderSettings(){
   }).join('');
 }
 async function saveSettings(){
+  try{const obj={};editMeters.forEach(m=>{obj[m.id]=m;});await fbSet("meters",obj);meters=[...editMeters];notify("✓ Indstillinger gemt!");showScreen('s-dash');render();}
+  catch{alert("Fejl ved gemning");}
+}
+
+// ── User management ───────────────────────────────────────────────────────────
+function renderUserSettings(){
+  document.getElementById('userSettList').innerHTML=users.map(u=>`
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px">
+      <div>
+        <div style="color:#eef;font-weight:700">${u.icon||"👤"} ${u.name}</div>
+        <div style="color:#8899aa;font-size:12px">${u.role==="admin"?"⭐ Admin":"Bruger"} · PIN: ${"•".repeat(String(u.pin).length)}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-dark btn-sm" onclick="editUser('${u.id}')">✏️</button>
+        <button class="btn btn-sm" style="background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid #ff6b6b" onclick="confirmDeleteUser('${u.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function showAddUser(){
+  editingUserId=null;
+  document.getElementById('addUserTitle').textContent="➕ Tilføj bruger";
+  document.getElementById('auName').value='';
+  document.getElementById('auPin').value='';
+  document.getElementById('auRole').value='user';
+  showScreen('s-adduser');
+}
+
+function editUser(id){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  editingUserId=id;
+  document.getElementById('addUserTitle').textContent="✏️ Rediger bruger";
+  document.getElementById('auName').value=u.name;
+  document.getElementById('auPin').value=u.pin;
+  document.getElementById('auRole').value=u.role;
+  showScreen('s-adduser');
+}
+
+async function saveUser(){
+  const name=document.getElementById('auName').value.trim();
+  const pin=document.getElementById('auPin').value.trim();
+  const role=document.getElementById('auRole').value;
+  if(!name||!pin){alert("Udfyld navn og PIN");return;}
+  if(pin.length!==4||isNaN(pin)){alert("PIN skal være præcis 4 cifre");return;}
+  const user={id:editingUserId||"user-"+Date.now(),name,pin,role,icon:"👤"};
   try{
-    const obj={};editMeters.forEach(m=>{obj[m.id]=m;});
-    await fbSet("meters",obj);
-    meters=[...editMeters];
-    notify("✓ Indstillinger gemt!");
-    showScreen('s-dash');
-    render();
+    await fbSet(`users/${user.id}`,user);
+    if(editingUserId){users=users.map(u=>u.id===editingUserId?user:u);}
+    else{users.push(user);}
+    notify("✓ Bruger gemt!");showSett();
   }catch{alert("Fejl ved gemning");}
+}
+
+function confirmDeleteUser(id){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  if(users.length<=1){alert("Du kan ikke slette den eneste bruger");return;}
+  openConfirm(`🗑 Slet bruger`,`Er du sikker på du vil slette brugeren "${u.name}"?`,async()=>{
+    try{
+      await fbDelete(`users/${id}`);
+      users=users.filter(u=>u.id!==id);
+      notify("✓ Bruger slettet");renderUserSettings();
+    }catch{alert("Fejl ved sletning");}
+  });
 }
 
 // ── Add Meter ─────────────────────────────────────────────────────────────────
@@ -640,17 +816,61 @@ async function addMeter(){
   if(!name||!loc){alert("Udfyld navn og lokation");return;}
   const meter={id:selType.type.toLowerCase()+"-"+Date.now(),name,type:selType.type,icon:selType.icon,unit,location:loc,intervalDays:days};
   try{
-    await fbSet(`meters/${meter.id}`,meter);
-    meters.push(meter);
+    await fbSet(`meters/${meter.id}`,meter);meters.push(meter);
     notify("✓ Måler tilføjet!");
-    document.getElementById('addName').value='';
-    document.getElementById('addLoc').value='';
-    showScreen('s-dash');
-    render();
+    document.getElementById('addName').value='';document.getElementById('addLoc').value='';
+    showScreen('s-dash');render();
   }catch{alert("Fejl ved tilføjelse");}
 }
 
 init();
+
+// ── PWA: Service Worker ───────────────────────────────────────────────────────
+if("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+
+// ── PWA: iOS install banner ───────────────────────────────────────────────────
+function showIOSInstallBanner() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const dismissed = localStorage.getItem("pwa_dismissed");
+  if (!isIOS || isStandalone || dismissed) return;
+
+  const banner = document.createElement("div");
+  banner.id = "ios-banner";
+  banner.style.cssText = `
+    position:fixed;bottom:100px;left:16px;right:16px;
+    background:#0f1520;border:1px solid #00e5ff;border-radius:14px;
+    padding:14px 16px;z-index:300;
+    box-shadow:0 4px 24px rgba(0,229,255,0.2);
+  `;
+  banner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div>
+        <div style="color:#00e5ff;font-weight:700;font-size:14px;margin-bottom:4px">⚡ Installer MålerLog</div>
+        <div style="color:#8899aa;font-size:12px;line-height:1.5">
+          Tryk på <strong style="color:#ccd">Del-ikonet</strong> 
+          <span style="font-size:16px">⬆️</span> 
+          og vælg <strong style="color:#ccd">"Føj til hjemskærm"</strong>
+        </div>
+      </div>
+      <button onclick="document.getElementById('ios-banner').remove();localStorage.setItem('pwa_dismissed','1')"
+        style="background:none;border:none;color:#8899aa;font-size:20px;cursor:pointer;flex-shrink:0">✕</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 12000);
+}
+
+// Vis banneret 2 sekunder efter login
+const _origAfterLogin = afterLogin;
+afterLogin = function() {
+  _origAfterLogin();
+  setTimeout(showIOSInstallBanner, 2000);
+};
 </script>
 </body>
 </html>
