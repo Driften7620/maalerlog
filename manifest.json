@@ -1,0 +1,22 @@
+{
+  "name": "MålerLog",
+  "short_name": "MålerLog",
+  "description": "Registrer måleraflæsninger på el, varme, vand og flow",
+  "start_url": "/maalerlog/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#00e5ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=maalerlog&bgcolor=0a0a0f&color=00e5ff",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=maalerlog&bgcolor=0a0a0f&color=00e5ff",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
