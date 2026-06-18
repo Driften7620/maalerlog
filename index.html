@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Driften App"/>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#00e5ff"/>
+<title>⚡ Driften App</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#0a0a0f;color:#ccd6f6;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;max-width:480px;margin:0 auto}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(0,229,255,.07),transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(0,100,255,.05),transparent 60%);pointer-events:none;z-index:0}
+.hdr{position:sticky;top:0;z-index:100;background:rgba(10,10,20,.97);border-bottom:1px solid #1a2030;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(12px)}
+.logo{color:#00e5ff;font-weight:900;font-size:17px;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:#ff6b6b;display:inline-block;transition:background .5s}
+.dot.on{background:#00e5ff;box-shadow:0 0 6px #00e5ff}
+.badge{background:#ff6b6b;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;display:none}
+.chip{background:#1a2030;border-radius:12px;padding:4px 10px;font-size:12px;cursor:pointer}
+.main{padding:16px;position:relative;z-index:1;padding-bottom:90px}
+.screen{display:none}.screen.active{display:block}
+.card{background:rgba(255,255,255,.03);border:1px solid #1a2030;border-radius:12px;padding:16px;margin-bottom:12px}
+.card-tap{cursor:pointer;transition:background .15s}.card-tap:active{background:rgba(255,255,255,.06)}
+.btn{background:#00e5ff;color:#0a0a0f;border:none;border-radius:8px;padding:11px 18px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-full{width:100%;font-size:16px;padding:14px}
+.btn-dark{background:#1a2030;border:1px solid #2a3040;color:#ccd6f6}
+.btn-red{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid #ff6b6b}
+.btn-green{background:rgba(100,220,100,.15);color:#6ddc6d;border:1px solid #6ddc6d}
+.btn-yellow{background:#ffd166;color:#0a0a0f}
+.btn-sm{padding:7px 12px;font-size:12px}
+.inp{background:#0f1520;border:1px solid #1e2d42;border-radius:8px;color:#eef;padding:10px 12px;font-size:15px;outline:none;width:100%}
+.inp:focus{border-color:#00e5ff}
+.inp-big{font-size:24px;font-family:'Courier New',monospace;text-align:center}
+label{display:block;color:#8899aa;font-size:12px;margin-bottom:4px}
+select.inp{cursor:pointer}
+.sec{color:#8899aa;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:16px 0 8px 4px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:1px solid #1a2030;border-radius:20px;padding:6px 14px;color:#8899aa;cursor:pointer;font-size:13px;white-space:nowrap;flex-shrink:0}
+.tab.active{background:rgba(0,229,255,.1);border-color:#00e5ff;color:#00e5ff;font-weight:700}
+.tab.yellow.active{background:rgba(255,209,102,.1);border-color:#ffd166;color:#ffd166}
+.loc-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;scrollbar-width:none}
+.loc-grid::-webkit-scrollbar{display:none}
+.loc-chip{border:1px solid #1a2030;border-radius:10px;padding:10px 14px;min-width:110px;flex-shrink:0;cursor:pointer}
+.toolbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(10,10,20,.97);border-top:1px solid #1a2030;display:flex;justify-content:space-around;padding:8px 0;z-index:100}
+.tbar-btn{background:none;border:none;color:#8899aa;cursor:pointer;font-size:10px;padding:5px 6px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px}
+.tbar-btn span:first-child{font-size:18px}
+.tbar-btn.active{color:#00e5ff}
+.tbar-btn.active-yellow{color:#ffd166}
+.back-btn{background:none;border:none;color:#8899aa;cursor:pointer;font-size:14px;margin-bottom:16px;padding:0}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;width:100%;max-width:300px}
+.pin-key{background:#1a2030;border:1px solid #2a3040;border-radius:10px;padding:16px;font-size:22px;font-weight:700;cursor:pointer;text-align:center;color:#eef}
+.pin-key:active{background:#00e5ff;color:#0a0a0f}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:16px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#1a2030;border:2px solid #334}
+.pin-dot.filled{background:#00e5ff;border-color:#00e5ff}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;padding:24px}
+.overlay.open{display:flex}
+.confirm-box{background:#0f1520;border:1px solid #1e2d42;border-radius:16px;padding:24px;width:100%;max-width:360px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.modal.open{display:flex}
+.notify{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#00e5ff;color:#0a0a0f;padding:10px 20px;border-radius:10px;font-weight:700;font-size:14px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.notify.show{opacity:1}
+.scanner-wrap{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:1}
+.scanner-wrap video{width:100%;height:100%;object-fit:cover}
+.scanner-aim{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scanner-aim-box{width:200px;height:200px;border:3px solid #00e5ff;border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.5)}
+.stock-bar-bg{background:#1a2030;border-radius:6px;height:8px;overflow:hidden;margin:6px 0}
+.stock-bar{height:100%;border-radius:6px;transition:width .3s}
+.module-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.module-btn{background:rgba(255,255,255,.03);border:2px solid #1a2030;border-radius:16px;padding:28px 16px;text-align:center;cursor:pointer}
+.module-btn:active{transform:scale(.97)}
+.qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qr-item{background:#fff;border-radius:10px;padding:12px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.type-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.type-btn{background:#1a2030;border:1px solid #2a3040;color:#8899aa;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
+.type-btn.active{background:rgba(0,229,255,.15);border-color:#00e5ff;color:#00e5ff}
+.user-btn{background:#1a2030;border:1px solid #2a3040;color:#ccd6f6;border-radius:10px;padding:14px 18px;cursor:pointer;font-size:15px;text-align:left;width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #1a2030;border-top-color:#00e5ff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media print{.hdr,.toolbar,.back-btn,.btn,.no-print{display:none!important}.qr-grid{grid-template-columns:repeat(3,1fr)!important}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="logo">⚡ Driften <span class="dot" id="connDot"></span></span>
+    <span class="badge" id="topBadge"></span>
+  </div>
+  <span class="chip" id="userChip" onclick="logout()"></span>
+</header>
+<div class="main">
+
+<!-- LOGIN -->
+<div class="screen active" id="s-login">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px);gap:16px;padding:24px;position:relative;z-index:1">
+    <div style="font-size:56px">⚡</div>
+    <h1 style="color:#00e5ff;font-family:'Courier New',monospace;font-size:24px;letter-spacing:2px">Driften App</h1>
+    <p style="color:#8899aa;font-size:13px">Vælg bruger</p>
+    <div style="width:100%;max-width:320px" id="userList"></div>
+  </div>
+</div>
+
+<!-- PIN -->
+<div class="screen" id="s-pin">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px);gap:8px;padding:24px;position:relative;z-index:1">
+    <div style="font-size:36px">👤</div>
+    <h2 style="color:#fff;font-size:20px" id="pinName"></h2>
+    <p style="color:#8899aa;font-size:13px">Indtast PIN-kode</p>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <button class="back-btn" style="margin-top:12px" onclick="showScreen('s-login')">← Vælg anden bruger</button>
+    <div style="color:#ff6b6b;font-size:13px;min-height:20px" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- MODUL VALG -->
+<div class="screen" id="s-module">
+  <div style="padding-top:16px;position:relative;z-index:1">
+    <h2 style="color:#fff;font-size:20px;margin-bottom:4px">Goddag, <span id="greetName"></span>! 👋</h2>
+    <p style="color:#8899aa;font-size:14px;margin-bottom:16px">Hvad vil du arbejde med?</p>
+    <div class="module-grid">
+      <div class="module-btn" style="border-color:#00e5ff" onclick="enterModule('meter')">
+        <div style="font-size:44px;margin-bottom:10px">⚡</div>
+        <div style="color:#00e5ff;font-weight:700;font-size:15px">MålerLog</div>
+        <div style="color:#8899aa;font-size:12px;margin-top:4px">Aflæs målere</div>
+        <div id="mModBadge" style="margin-top:8px"></div>
+      </div>
+      <div class="module-btn" style="border-color:#ffd166" onclick="enterModule('stock')">
+        <div style="font-size:44px;margin-bottom:10px">📦</div>
+        <div style="color:#ffd166;font-weight:700;font-size:15px">Lagerstyring</div>
+        <div style="color:#8899aa;font-size:12px;margin-top:4px">Forbrug & beholdning</div>
+        <div id="sModBadge" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="s-setup">
+  <h2 style="color:#00e5ff;font-size:20px;margin-bottom:12px">⚡ Opsætning</h2>
+  <div class="card">
+    <label>API Key</label><input class="inp" id="fb-apiKey" placeholder="AIzaSy..." style="margin-bottom:8px"/>
+    <label>Database URL</label><input class="inp" id="fb-dbUrl" placeholder="https://...firebasedatabase.app" style="margin-bottom:8px"/>
+    <label>Project ID</label><input class="inp" id="fb-projectId" placeholder="dit-projekt" style="margin-bottom:14px"/>
+    <button class="btn btn-full" onclick="saveConfig()">Gem og forbind →</button>
+  </div>
+  <div class="card" style="background:rgba(0,229,255,.05);border-color:#00e5ff">
+    <div style="color:#00e5ff;font-weight:700;margin-bottom:8px">💡 Dine værdier</div>
+    <div style="color:#8899aa;font-size:12px;line-height:1.8">
+      API Key: <span style="color:#ccd;font-family:monospace;font-size:10px">AIzaSyDxcXeXhHnqAisfVPiNZOSwqtb9mVsN18s</span><br>
+      URL: <span style="color:#ccd;font-family:monospace;font-size:10px">https://maalerlog-1d56c-default-rtdb.europe-west1.firebasedatabase.app</span><br>
+      Project: <span style="color:#ccd;font-family:monospace;font-size:10px">maalerlog</span>
+    </div>
+    <button class="btn btn-full" style="margin-top:10px;font-size:13px" onclick="autofill()">✓ Brug disse værdier</button>
+  </div>
+</div>
+<div class="screen" id="s-loading"><div style="text-align:center;padding:60px 20px;z-index:1;position:relative"><div style="font-size:48px;margin-bottom:16px">⚡</div><div style="color:#00e5ff">Forbinder... <span class="spin"></span></div></div></div>
+<div class="screen" id="s-error"><div style="text-align:center;padding:60px 20px"><div style="font-size:48px">❌</div><div style="color:#ff6b6b;font-weight:700;margin-top:12px">Forbindelsesfejl</div><button class="btn" style="margin-top:20px" onclick="clearCfg()">Ret konfiguration</button></div></div>
+
+<!-- ═══ MÅLERLOG ═══ -->
+<div class="screen" id="s-dash">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn btn-full" onclick="startScan('meter')" style="font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:20px">📷</span> Scan QR-kode</button>
+    <button class="btn btn-dark" onclick="goQRMeter()" style="padding:10px 12px;flex-shrink:0">🖨</button>
+  </div>
+  <div class="sec">📍 Lokationer</div>
+  <div class="loc-grid" id="locGrid"></div>
+  <div class="tabs" id="locTabs"></div>
+  <div id="dashList"></div>
+</div>
+
+<div class="screen" id="s-meter">
+  <button class="back-btn" onclick="showScreen('s-dash')">← Tilbage</button>
+  <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+    <span style="font-size:38px" id="mIcon"></span>
+    <div style="flex:1"><h2 style="color:#fff;font-size:18px;margin:0 0 2px" id="mName"></h2><div style="color:#8899aa;font-size:13px" id="mLoc"></div><div style="color:#445566;font-size:11px;font-family:monospace" id="mId"></div></div>
+    <!-- slet via swipe på oversigten -->
+  </div>
+  <div class="card" id="mStatus"></div>
+  <div class="card" style="text-align:center"><div style="color:#8899aa;font-size:12px;margin-bottom:10px">QR-kode til denne måler</div><div style="display:inline-block;background:#fff;padding:10px;border-radius:10px"><img id="mQR" src="" alt="QR" style="width:140px;height:140px;display:block"/></div></div>
+  <div class="card">
+    <div style="color:#aabbcc;font-weight:700;margin-bottom:12px">📝 Ny aflæsning</div>
+    <button class="btn btn-dark btn-full" onclick="document.getElementById('photoInp').click()">📷 Tag billede af målerdisplay</button>
+    <input type="file" id="photoInp" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)"/>
+    <div id="imgArea"></div>
+    <label style="margin-top:14px" id="valLbl">Målerværdi</label>
+    <input class="inp inp-big" id="valInp" type="number" placeholder="0.00" style="margin-bottom:12px"/>
+    <label>Note (valgfri)</label>
+    <input class="inp" id="noteInp" placeholder="fx: måler lidt snavset..." style="margin-bottom:14px"/>
+    <div style="color:#8899aa;font-size:12px;margin-bottom:12px" id="rMeta"></div>
+    <button class="btn btn-full" id="saveBtn" onclick="saveReading()">✓ Gem aflæsning</button>
+  </div>
+  <div class="card" id="mHist" style="display:none"><div style="color:#aabbcc;font-weight:700;margin-bottom:10px">📈 Seneste</div><div id="mHistList"></div></div>
+</div>
+
+<div class="screen" id="s-qr-m">
+  <button class="back-btn no-print" onclick="showScreen('s-dash')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:12px">🖨 QR-koder — Målere</h2>
+  <div style="display:flex;gap:8px;margin-bottom:14px" class="no-print">
+    <select class="inp" id="qrMLocF" onchange="renderMQR()" style="flex:1"></select>
+    <button class="btn" onclick="window.print()">🖨 Print</button>
+  </div>
+  <div class="qr-grid" id="mqrGrid"></div>
+</div>
+
+<div class="screen" id="s-m-hist">
+  <button class="back-btn" onclick="showScreen('s-dash')">← Tilbage</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h2 style="color:#fff;font-size:19px">📊 Måler historik</h2>
+    <button class="btn" onclick="expMeterCSV()" style="font-size:13px;padding:9px 14px">⬇ Excel</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <select class="inp" id="hLocF" onchange="renderMHist()" style="flex:1"></select>
+    <select class="inp" id="hMF" onchange="renderMHist()" style="flex:1"></select>
+  </div>
+  <div id="mHistData"></div>
+</div>
+
+<div class="screen" id="s-m-sett">
+  <button class="back-btn" onclick="showScreen('s-dash')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:14px">⚙ Indstillinger</h2>
+  <div class="sec">👤 Brugere</div>
+  <div id="uSettList"></div>
+  <button class="btn btn-dark btn-full" onclick="showAddUser()" style="margin-bottom:20px">➕ Tilføj bruger</button>
+  <div class="sec">⚡ Målere</div>
+  <select class="inp" id="sLocF" onchange="renderMSett()" style="margin-bottom:14px"></select>
+  <div id="mSettList"></div>
+  <button class="btn btn-full" onclick="saveMSett()" style="margin-top:4px">Gem ændringer</button>
+</div>
+
+<div class="screen" id="s-add-m">
+  <button class="back-btn" onclick="showScreen('s-dash')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:14px">➕ Tilføj måler</h2>
+  <div class="card">
+    <div class="type-grid" id="mTypeGrid"></div>
+    <label>Navn *</label><input class="inp" id="aMName" placeholder="fx El-måler" style="margin-bottom:8px"/>
+    <label>Lokation *</label><input class="inp" id="aMloc" placeholder="fx Hal A" style="margin-bottom:8px"/>
+    <label>Enhed</label><input class="inp" id="aMUnit" style="margin-bottom:8px"/>
+    <label>Interval (dage)</label><input class="inp" id="aMDays" type="number" value="30" style="margin-bottom:14px"/>
+    <button class="btn btn-full" onclick="addMeter()">Tilføj måler</button>
+  </div>
+</div>
+
+<div class="screen" id="s-adduser">
+  <button class="back-btn" onclick="showSett()">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:14px" id="auTitle">➕ Tilføj bruger</h2>
+  <div class="card">
+    <label>Navn *</label><input class="inp" id="auName" style="margin-bottom:8px"/>
+    <label>PIN (4 cifre) *</label><input class="inp" id="auPin" type="number" maxlength="4" style="margin-bottom:8px;letter-spacing:6px;text-align:center;font-size:20px"/>
+    <label>Rolle</label>
+    <select class="inp" id="auRole" style="margin-bottom:14px">
+      <option value="user">Bruger</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button class="btn btn-full" onclick="saveUser()">Gem bruger</button>
+  </div>
+</div>
+
+<!-- ═══ LAGERSTYRING ═══ -->
+<div class="screen" id="s-stock">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn-yellow btn btn-full" onclick="startScan('stock')" style="font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:20px">📷</span> Scan QR-kode</button>
+    <button class="btn btn-dark" onclick="goQRStock()" style="padding:10px 12px;flex-shrink:0">🖨</button>
+  </div>
+  <div id="stockAlert"></div>
+  <div class="sec">📦 Kategorier</div>
+  <div class="tabs" id="catTabs"></div>
+  <div id="stockList"></div>
+</div>
+
+<div class="screen" id="s-item">
+  <button class="back-btn" onclick="showScreen('s-stock')">← Tilbage</button>
+  <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+    <span style="font-size:38px" id="iIcon"></span>
+    <div style="flex:1"><h2 style="color:#fff;font-size:18px;margin:0 0 2px" id="iName"></h2><div style="color:#8899aa;font-size:12px" id="iCat"></div></div>
+    <button class="btn btn-sm btn-red" id="iDelBtn" onclick="delItem()">🗑</button>
+  </div>
+  <div class="card" id="iStatus"></div>
+  <div class="card">
+    <div style="color:#aabbcc;font-weight:700;margin-bottom:12px">📤 Tag fra lager</div>
+    <label>Antal taget</label><input class="inp inp-big" id="takeQty" type="number" min="1" placeholder="0" style="margin-bottom:12px"/>
+    <label>Note (valgfri)</label><input class="inp" id="takeNote" placeholder="fx: brugt til reparation" style="margin-bottom:12px"/>
+    <button class="btn btn-full btn-red" style="border:none" onclick="takeStock()">📤 Tag fra lager</button>
+  </div>
+  <div class="card">
+    <div style="color:#aabbcc;font-weight:700;margin-bottom:12px">📥 Læg på lager</div>
+    <label>Antal tilføjet</label><input class="inp inp-big" id="addQty" type="number" min="1" placeholder="0" style="margin-bottom:12px"/>
+    <label>Note (valgfri)</label><input class="inp" id="addNote" placeholder="fx: ny levering" style="margin-bottom:12px"/>
+    <button class="btn btn-full btn-green" style="border:none" onclick="addStock()">📥 Læg på lager</button>
+  </div>
+  <div class="card" id="iLogCard" style="display:none"><div style="color:#aabbcc;font-weight:700;margin-bottom:10px">📋 Seneste bevægelser</div><div id="iLog"></div></div>
+</div>
+
+<div class="screen" id="s-add-item">
+  <button class="back-btn" onclick="showScreen('s-stock')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:14px">➕ Tilføj vare</h2>
+  <div class="card">
+    <label>Varenavn *</label><input class="inp" id="niName" placeholder="fx Pakning 50mm" style="margin-bottom:8px"/>
+    <label>Kategori</label><input class="inp" id="niCat" placeholder="fx Rør, Filtre, El..." style="margin-bottom:8px"/>
+    <label>Enhed</label><input class="inp" id="niUnit" placeholder="stk" style="margin-bottom:8px"/>
+    <label>Nuværende beholdning</label><input class="inp" id="niQty" type="number" value="0" style="margin-bottom:8px"/>
+    <label>Minimum (alarm)</label><input class="inp" id="niMin" type="number" value="5" style="margin-bottom:8px"/>
+    <label>Maximum (lagerplads)</label><input class="inp" id="niMax" type="number" value="20" style="margin-bottom:8px"/>
+    <label>Placering</label><input class="inp" id="niLoc" placeholder="fx Hylde A3..." style="margin-bottom:8px"/>
+    <label>Ikon (emoji)</label><input class="inp" id="niIcon" value="📦" style="margin-bottom:14px;font-size:20px;text-align:center"/>
+    <button class="btn btn-full btn-yellow" style="border:none" onclick="addItem()">Tilføj vare</button>
+  </div>
+</div>
+
+<div class="screen" id="s-stock-hist">
+  <button class="back-btn" onclick="showScreen('s-stock')">← Tilbage</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h2 style="color:#fff;font-size:19px">📋 Lager historik</h2>
+    <button class="btn" onclick="expStockCSV()" style="font-size:13px;padding:9px 14px">⬇ Excel</button>
+  </div>
+  <select class="inp" id="sHistCat" onchange="renderSHist()" style="margin-bottom:14px"></select>
+  <div id="sHistData"></div>
+</div>
+
+<div class="screen" id="s-stock-sett">
+  <button class="back-btn" onclick="showScreen('s-stock')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:14px">⚙ Lager indstillinger</h2>
+  <div class="sec">📧 Email notifikationer</div>
+  <div class="card">
+    <div style="color:#8899aa;font-size:13px;margin-bottom:10px">Modtager email når vare kommer under minimum</div>
+    <div id="emailList" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px"><input class="inp" id="newEmail" type="email" placeholder="email@firma.dk" style="flex:1"/><button class="btn" onclick="addEmail()">Tilføj</button></div>
+    <button class="btn btn-full btn-yellow" style="border:none;margin-top:12px" onclick="sendTestEmail()">📧 Send test-email</button>
+  </div>
+  <div class="sec">📦 Varer — min/max grænser</div>
+  <div id="sSettList"></div>
+</div>
+
+<div class="screen" id="s-qr-s">
+  <button class="back-btn no-print" onclick="showScreen('s-stock')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:12px">🖨 QR-koder — Varer</h2>
+  <div style="display:flex;gap:8px;margin-bottom:14px" class="no-print">
+    <select class="inp" id="qrSCatF" onchange="renderSQR()" style="flex:1"></select>
+    <button class="btn btn-yellow" style="border:none" onclick="window.print()">🖨 Print</button>
+  </div>
+  <div class="qr-grid" id="sqrGrid"></div>
+</div>
+
+<!-- SCANNER -->
+<div class="screen" id="s-scan">
+  <button class="back-btn" onclick="stopScan();showScreen(scanMode==='meter'?'s-dash':'s-stock')">← Tilbage</button>
+  <h2 style="color:#fff;font-size:19px;margin-bottom:8px">📷 Scan QR-kode</h2>
+  <div class="scanner-wrap">
+    <video id="qrV" playsinline></video>
+    <canvas id="qrC" style="display:none"></canvas>
+    <div class="scanner-aim"><div class="scanner-aim-box"></div></div>
+    <div id="scanSt" style="position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#00e5ff;font-weight:700;font-size:14px;text-shadow:0 1px 4px #000">Søger...</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:14px">
+    <input class="inp" id="scanManual" placeholder="Eller skriv ID manuelt..." style="flex:1;font-size:13px" onkeydown="if(event.key==='Enter'){stopScan();handleScan(this.value);}"/>
+    <button class="btn" onclick="stopScan();handleScan(document.getElementById('scanManual').value)">→</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- Toolbar Måler -->
+<div class="toolbar" id="tbM" style="display:none">
+  <button class="tbar-btn" id="tm1" onclick="showScreen('s-dash')"><span>🏠</span><span>Oversigt</span></button>
+  <button class="tbar-btn" id="tm2" onclick="showMHist()"><span>📊</span><span>Historik</span></button>
+  <button class="tbar-btn" id="tm3" onclick="showScreen('s-add-m')"><span>➕</span><span>Tilføj</span></button>
+  <button class="tbar-btn" id="tm4" onclick="goQRMeter()"><span>🖨</span><span>QR</span></button>
+  <button class="tbar-btn" id="tm5" onclick="showSett()"><span>⚙</span><span>Indst.</span></button>
+  <button class="tbar-btn" onclick="showScreen('s-module')"><span>🔀</span><span>Skift</span></button>
+</div>
+
+<!-- Toolbar Lager -->
+<div class="toolbar" id="tbS" style="display:none">
+  <button class="tbar-btn" id="ts1" onclick="showScreen('s-stock')"><span>📦</span><span>Lager</span></button>
+  <button class="tbar-btn" id="ts2" onclick="showSHist()"><span>📋</span><span>Historik</span></button>
+  <button class="tbar-btn" id="ts3" onclick="showScreen('s-add-item')"><span>➕</span><span>Tilføj</span></button>
+  <button class="tbar-btn" id="ts4" onclick="goQRStock()"><span>🖨</span><span>QR</span></button>
+  <button class="tbar-btn" id="ts5" onclick="showScreen('s-stock-sett');renderSSett()"><span>⚙</span><span>Indst.</span></button>
+  <button class="tbar-btn" onclick="showScreen('s-module')"><span>🔀</span><span>Skift</span></button>
+</div>
+
+<!-- Confirm -->
+<div class="overlay" id="confirmOv">
+  <div class="confirm-box">
+    <div style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px" id="cTitle"></div>
+    <div style="color:#8899aa;font-size:14px;margin-bottom:20px;line-height:1.5" id="cMsg"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-dark" style="flex:1" onclick="closeConfirm()">Annuller</button>
+      <button class="btn btn-red" style="flex:1;border:none" id="cOkBtn">Slet</button>
+    </div>
+  </div>
+</div>
+<div class="notify" id="notify"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE & CONSTANTS
+// ══════════════════════════════════════════════════════════════════════════════
+let FB_URL="", meters=[], readings=[], users=[], stockItems=[], stockLog=[], emails=[];
+let CU=null, activeMeter=null, activeItem=null, activeLoc="Alle", activeCat="Alle";
+let curMod="meter", pinTarget=null, pinBuf="", scanMode="meter";
+let editMeters=[], editUid=null, scanStream=null, scanTimer=null;
+
+const APP="https://driften7620.github.io/maalerlog";
+const WORKER="https://maalerlog-ai.driftenlemvigvarmevaerk.workers.dev";
+const MT=[{t:"El",i:"⚡",u:"kWh"},{t:"Varme",i:"🔥",u:"GJ"},{t:"Vand",i:"💧",u:"m³"},{t:"Flow",i:"🌊",u:"m³/h"},{t:"Gas",i:"💨",u:"m³"},{t:"Andet",i:"📟",u:""}];
+let selMT=MT[0];
+const DM=[
+  {id:"el-hal-a",name:"El-måler",type:"El",unit:"kWh",intervalDays:30,icon:"⚡",location:"Hal A"},
+  {id:"vand-hal-a",name:"Vandmåler",type:"Vand",unit:"m³",intervalDays:7,icon:"💧",location:"Hal A"},
+  {id:"el-hal-b",name:"El-måler",type:"El",unit:"kWh",intervalDays:30,icon:"⚡",location:"Hal B"},
+  {id:"varme-hal-b",name:"Varmemåler",type:"Varme",unit:"GJ",intervalDays:30,icon:"🔥",location:"Hal B"},
+  {id:"el-kontor",name:"El-måler",type:"El",unit:"kWh",intervalDays:30,icon:"⚡",location:"Kontor"},
+  {id:"vand-kontor",name:"Vandmåler",type:"Vand",unit:"m³",intervalDays:7,icon:"💧",location:"Kontor"},
+  {id:"flow-mask1",name:"Flowmåler",type:"Flow",unit:"m³/h",intervalDays:14,icon:"🌊",location:"Maskinrum 1"},
+  {id:"el-kant",name:"El-måler",type:"El",unit:"kWh",intervalDays:30,icon:"⚡",location:"Kantine"},
+  {id:"vand-kant",name:"Vandmåler",type:"Vand",unit:"m³",intervalDays:7,icon:"💧",location:"Kantine"},
+  {id:"varme-kant",name:"Varmemåler",type:"Varme",unit:"GJ",intervalDays:30,icon:"🔥",location:"Kantine"},
+];
+const DU=[
+  {id:"user-stefan",name:"Stefan",pin:"1234",role:"admin",icon:"👤"},
+  {id:"user-anders",name:"Anders",pin:"1111",role:"user",icon:"👤"},
+  {id:"user-mette",name:"Mette",pin:"2222",role:"user",icon:"👤"},
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const dSince=d=>!d?Infinity:Math.floor((Date.now()-new Date(d))/86400000);
+const fmt=iso=>!iso?"—":new Date(iso).toLocaleString("da-DK",{dateStyle:"short",timeStyle:"short"});
+const lastR=id=>[...readings].filter(r=>r.meterId===id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0]||null;
+const isDue=m=>{const lr=lastR(m.id);return !lr||dSince(lr.date)>=m.intervalDays;};
+const locs=()=>["Alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
+const cats=()=>["Alle",...new Set(stockItems.map(i=>i.category).filter(Boolean).sort())];
+const qr=(id,s,type)=>`https://api.qrserver.com/v1/create-qr-code/?size=${s}x${s}&data=${encodeURIComponent(APP+"?"+type+"="+id)}&bgcolor=ffffff&color=000000&margin=4`;
+const isAdmin=()=>{
+  // Admin hvis rolle er admin, eller hvis der kun er én bruger i systemet
+  if(CU?.role==="admin")return true;
+  if(users.length<=1)return true;
+  return false;
+};
+const isLow=item=>item.qty<=item.minQty;
+
+function toast(msg,col="#00e5ff"){const e=document.getElementById('notify');e.textContent=msg;e.style.background=col;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500);}
+
+// ── Firebase ──────────────────────────────────────────────────────────────────
+const fbG=async p=>{const r=await fetch(`${FB_URL}/${p}.json`);if(!r.ok)throw Error(r.status);return r.json();};
+const fbS=async(p,d)=>{const r=await fetch(`${FB_URL}/${p}.json`,{method:"PUT",body:JSON.stringify(d),headers:{"Content-Type":"application/json"}});if(!r.ok)throw Error(r.status);return r.json();};
+const fbP=async(p,d)=>{const r=await fetch(`${FB_URL}/${p}.json`,{method:"POST",body:JSON.stringify(d),headers:{"Content-Type":"application/json"}});if(!r.ok)throw Error(r.status);return r.json();};
+const fbD=async p=>{const r=await fetch(`${FB_URL}/${p}.json`,{method:"DELETE"});if(!r.ok)throw Error(r.status);};
+const fbU=async(p,d)=>{const r=await fetch(`${FB_URL}/${p}.json`,{method:"PATCH",body:JSON.stringify(d),headers:{"Content-Type":"application/json"}});if(!r.ok)throw Error(r.status);return r.json();};
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const loadCfg=()=>{try{return JSON.parse(localStorage.getItem("mlog_cfg"));}catch{return null;}};
+function clearCfg(){localStorage.removeItem("mlog_cfg");location.reload();}
+function autofill(){document.getElementById('fb-apiKey').value="AIzaSyDxcXeXhHnqAisfVPiNZOSwqtb9mVsN18s";document.getElementById('fb-dbUrl').value="https://maalerlog-1d56c-default-rtdb.europe-west1.firebasedatabase.app";document.getElementById('fb-projectId').value="maalerlog";saveConfig();}
+function saveConfig(){const k=document.getElementById('fb-apiKey').value.trim(),u=document.getElementById('fb-dbUrl').value.trim();if(!k||!u){alert("Udfyld alle felter");return;}localStorage.setItem("mlog_cfg",JSON.stringify({key:k,url:u}));location.reload();}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init(){
+  buildPin();
+  document.getElementById('mTypeGrid').innerHTML=MT.map(t=>`<button class="type-btn${t.t===selMT.t?' active':''}" onclick="selMTF('${t.t}')">${t.i} ${t.t}</button>`).join('');
+  document.getElementById('aMUnit').value=selMT.u;
+  const cfg=loadCfg();
+  if(!cfg){showScreen('s-setup');return;}
+  FB_URL=cfg.url;
+  showScreen('s-loading');
+  try{
+    let md=await fbG("meters");if(!md||!Object.keys(md).length){const o={};DM.forEach(m=>{o[m.id]=m;});await fbS("meters",o);md=o;}
+    meters=Object.values(md);
+    const rd=await fbG("readings");readings=rd?Object.values(rd):[];
+    let ud=await fbG("users");if(!ud||!Object.keys(ud).length){const o={};DU.forEach(u=>{o[u.id]=u;});await fbS("users",o);ud=o;}
+    users=Object.values(ud);
+    const sd=await fbG("stockItems");stockItems=sd?Object.values(sd):[];
+    const sld=await fbG("stockLog");stockLog=sld?Object.values(sld):[];
+    const ed=await fbG("emailRecipients");emails=ed?Object.values(ed):[];
+    document.getElementById('connDot').classList.add('on');
+    const sid=localStorage.getItem("mlog_user");
+    const su=users.find(u=>u.id===sid);
+    if(su){CU=su;afterLogin();}else{renderLogin();showScreen('s-login');}
+    setInterval(poll,30000);
+  }catch(e){console.error(e);showScreen('s-error');}
+}
+
+async function poll(){
+  try{
+    const md=await fbG("meters");if(md)meters=Object.values(md);
+    const rd=await fbG("readings");readings=rd?Object.values(rd):[];
+    const ud=await fbG("users");if(ud)users=Object.values(ud);
+    const sd=await fbG("stockItems");stockItems=sd?Object.values(sd):[];
+    const sld=await fbG("stockLog");stockLog=sld?Object.values(sld):[];
+    const ed=await fbG("emailRecipients");emails=ed?Object.values(ed):[];
+    renderBadges();
+    if(curMod==="meter")renderDash();
+    else renderStock();
+  }catch(e){}
+}
+
+// ── Login & PIN ───────────────────────────────────────────────────────────────
+function renderLogin(){document.getElementById('userList').innerHTML=users.map(u=>`<button class="user-btn" onclick="startPin('${u.id}')"><span>${u.icon||"👤"} ${u.name}</span><span style="color:#556677;font-size:12px">${u.role==="admin"?"⭐ Admin":"Bruger"}</span></button>`).join('');}
+function startPin(id){pinTarget=users.find(u=>u.id===id);if(!pinTarget)return;pinBuf="";document.getElementById('pinName').textContent=pinTarget.name;document.getElementById('pinErr').textContent="";updateDots();showScreen('s-pin');}
+function buildPin(){
+  const keys=["1","2","3","4","5","6","7","8","9","","0","⌫"];
+  document.getElementById('pinDots').innerHTML=[0,1,2,3].map(i=>`<div class="pin-dot" id="pd${i}"></div>`).join('');
+  document.getElementById('pinPad').innerHTML=keys.map(k=>k===""?`<div></div>`:`<button class="pin-key" onclick="pk('${k}')">${k}</button>`).join('');
+}
+function pk(k){if(k==="⌫")pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;updateDots();if(pinBuf.length===4)setTimeout(checkPin,200);}
+function updateDots(){for(let i=0;i<4;i++){const e=document.getElementById('pd'+i);if(e)e.classList.toggle('filled',i<pinBuf.length);}}
+function checkPin(){if(!pinTarget){showScreen('s-login');return;}if(""+pinBuf===""+pinTarget.pin){CU=pinTarget;localStorage.setItem("mlog_user",pinTarget.id);afterLogin();}else{document.getElementById('pinErr').textContent="Forkert PIN — prøv igen";pinBuf="";updateDots();}}
+function afterLogin(){document.getElementById('userChip').textContent="👤 "+CU.name+" ⇄";renderBadges();showScreen('s-module');document.getElementById('greetName').textContent=CU.name;}
+function logout(){CU=null;localStorage.removeItem("mlog_user");document.getElementById('tbM').style.display='none';document.getElementById('tbS').style.display='none';renderLogin();showScreen('s-login');}
+
+function enterModule(mod){
+  curMod=mod;
+  document.getElementById('tbM').style.display=mod==='meter'?'flex':'none';
+  document.getElementById('tbS').style.display=mod==='stock'?'flex':'none';
+  ['tm3','tm5'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=isAdmin()?'':'none';});
+  ['ts3','ts5'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=isAdmin()?'':'none';});
+  if(mod==='meter'){renderDash();showScreen('s-dash');}
+  else{renderStock();showScreen('s-stock');}
+}
+
+function renderBadges(){
+  const mDue=meters.filter(isDue).length;
+  const sLow=stockItems.filter(isLow).length;
+  const mb=document.getElementById('mModBadge'),sb=document.getElementById('sModBadge'),tb=document.getElementById('topBadge');
+  if(mb)mb.innerHTML=mDue>0?`<span style="background:#ff6b6b;color:#fff;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700">⚠ ${mDue} afventer</span>`:'';
+  if(sb)sb.innerHTML=sLow>0?`<span style="background:#ff6b6b;color:#fff;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700">🔴 ${sLow} under min</span>`:'';
+  const tot=mDue+sLow;tb.textContent=tot;tb.style.display=tot>0?'':'none';
+}
+
+// ── Screens ───────────────────────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tbar-btn').forEach(b=>b.classList.remove('active'));
+  const map={...{'s-dash':'tm1','s-m-hist':'tm2','s-add-m':'tm3','s-qr-m':'tm4','s-m-sett':'tm5'},
+             ...{'s-stock':'ts1','s-stock-hist':'ts2','s-add-item':'ts3','s-qr-s':'ts4','s-stock-sett':'ts5'}};
+  if(map[id])document.getElementById(map[id])?.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── Confirm ───────────────────────────────────────────────────────────────────
+let cCb=null;
+function openConfirm(title,msg,cb,btn="Slet"){document.getElementById('cTitle').textContent=title;document.getElementById('cMsg').textContent=msg;document.getElementById('cOkBtn').textContent=btn;cCb=cb;document.getElementById('confirmOv').classList.add('open');}
+function closeConfirm(){document.getElementById('confirmOv').classList.remove('open');cCb=null;}
+document.getElementById('cOkBtn').onclick=()=>{closeConfirm();if(cCb)cCb();};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// QR SCANNER
+// ══════════════════════════════════════════════════════════════════════════════
+function startScan(mode){
+  scanMode=mode;showScreen('s-scan');
+  document.getElementById('scanSt').textContent='Starter kamera...';
+  document.getElementById('scanManual').value='';
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(stream=>{scanStream=stream;const v=document.getElementById('qrV');v.srcObject=stream;v.play();v.onloadedmetadata=()=>{document.getElementById('scanSt').textContent='Søger efter QR-kode...';scanTimer=setInterval(scanFrame,300);};})
+    .catch(()=>{document.getElementById('scanSt').textContent='Kamera ikke tilgængeligt';document.getElementById('scanSt').style.color='#ff6b6b';});
+}
+function stopScan(){clearInterval(scanTimer);scanTimer=null;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}}
+function scanFrame(){
+  const v=document.getElementById('qrV'),c=document.getElementById('qrC');
+  if(!v||!c||v.readyState!==4)return;
+  const sz=Math.min(v.videoWidth,v.videoHeight);c.width=sz;c.height=sz;
+  const ctx=c.getContext('2d');ctx.drawImage(v,(v.videoWidth-sz)/2,(v.videoHeight-sz)/2,sz,sz,0,0,sz,sz);
+  try{
+    if('BarcodeDetector' in window){new BarcodeDetector({formats:['qr_code']}).detect(c).then(r=>{if(r.length){stopScan();handleScan(r[0].rawValue);}}).catch(()=>{});}
+    else if(window.jsQR){const img=ctx.getImageData(0,0,sz,sz);const code=jsQR(img.data,sz,sz);if(code){stopScan();handleScan(code.data);}}
+  }catch(e){}
+}
+function handleScan(data){
+  if(!data)return;
+  let mId=null,sId=null;
+  try{const u=new URL(data);mId=u.searchParams.get('meter');sId=u.searchParams.get('stock');}
+  catch{if(data.startsWith('meter:'))mId=data.replace('meter:','').trim();else if(data.startsWith('stock:'))sId=data.replace('stock:','').trim();}
+  if(mId&&meters.find(m=>m.id===mId)){curMod='meter';document.getElementById('tbM').style.display='flex';document.getElementById('tbS').style.display='none';openMeter(mId);setTimeout(()=>{try{document.getElementById('photoInp').click();}catch(e){}},600);}
+  else if(sId&&stockItems.find(i=>i.id===sId)){curMod='stock';document.getElementById('tbS').style.display='flex';document.getElementById('tbM').style.display='none';openItem(sId);}
+  else{toast("⚠ Ukendt QR-kode","#ff6b6b");showScreen(scanMode==='meter'?'s-dash':'s-stock');}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MÅLERLOG
+// ══════════════════════════════════════════════════════════════════════════════
+function renderDash(){
+  const ls=locs();
+  document.getElementById('locGrid').innerHTML=ls.filter(l=>l!=="Alle").map(loc=>{
+    const ms=meters.filter(m=>m.location===loc),d=ms.filter(isDue).length;
+    return `<div class="loc-chip${activeLoc===loc?' active':''}" onclick="setLoc('${loc}')" style="border-color:${d>0?'#ff6b6b':'#00e5ff'}">
+      <div style="font-weight:700;font-size:13px;color:#eef;margin-bottom:4px">${loc}</div>
+      <div style="display:flex;gap:6px">${d>0?`<span style="background:#ff6b6b;color:#fff;border-radius:8px;padding:1px 7px;font-size:11px;font-weight:700">⚠ ${d}</span>`:`<span style="background:rgba(0,229,255,.2);color:#00e5ff;border-radius:8px;padding:1px 7px;font-size:11px;font-weight:700">✓ OK</span>`}<span style="color:#8899aa;font-size:11px">${ms.length} målere</span></div></div>`;
+  }).join('');
+  document.getElementById('locTabs').innerHTML=ls.map(loc=>{const n=loc!=="Alle"?meters.filter(m=>m.location===loc&&isDue(m)).length:0;return `<button class="tab${activeLoc===loc?' active':''}" onclick="setLoc('${loc}')">${loc}${n>0?`<span style="background:#ff6b6b;color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:4px">${n}</span>`:''}</button>`;}).join('');
+  const fl=activeLoc==="Alle"?meters:meters.filter(m=>m.location===activeLoc);
+  const due=fl.filter(isDue),ok=fl.filter(m=>!isDue(m));
+  let h='';
+  if(due.length){h+=`<div class="sec"><span style="color:#ff6b6b">⚠</span> Afventer (${due.length})</div>`+due.map(mCard).join('');}
+  if(ok.length){h+=`<div class="sec"><span style="color:#00e5ff">✓</span> Aflæst (${ok.length})</div>`+ok.map(mCard).join('');}
+  if(!fl.length)h='<div style="color:#8899aa;text-align:center;padding:40px">Ingen målere</div>';
+  document.getElementById('dashList').innerHTML=h;
+}
+function mCard(m){
+  const r=lastR(m.id),due=isDue(m);
+  return `<div style="position:relative;margin-bottom:12px;overflow:hidden;border-radius:12px" id="sw-${m.id}">
+    ${isAdmin()?`<div style="position:absolute;right:0;top:0;bottom:0;width:80px;background:#ff6b6b;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:12px;font-weight:700;cursor:pointer;border-radius:0 12px 12px 0" onclick="swipeDelMeter('${m.id}')">🗑<span>Slet</span></div>`:''}
+    <div id="card-${m.id}" class="card card-tap" style="border-left:3px solid ${due?'#ff6b6b':'#00e5ff'};margin-bottom:0;position:relative;transition:transform .25s;will-change:transform;background:#0f141f"
+      onclick="if(!swipeMoved)openMeter('${m.id}')"
+      ontouchstart="tsStart(event,'${m.id}')"
+      ontouchmove="tsMove(event,'${m.id}')"
+      ontouchend="tsEnd(event,'${m.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:17px;margin-bottom:3px">${m.icon} <span style="color:#eef;font-size:15px;font-weight:700">${m.name}</span> <span style="color:#556677;font-size:12px">· ${m.location}</span></div>
+        ${r?`<div style="color:#ccd;font-size:13px;margin-top:4px"><strong style="color:#fff">${r.value} ${m.unit}</strong> <span style="color:#8899aa">af ${r.user}</span><br><span style="color:#667788">${fmt(r.date)}</span></div>`:`<div style="color:#8899aa;font-size:12px;margin-top:4px">Ingen aflæsning endnu</div>`}
+        </div>
+        <div style="text-align:center"><div class="sdot ${due?'due':'ok'}">${due?'!':'✓'}</div>${r?`<div style="color:#8899aa;font-size:11px;margin-top:4px">${dSince(r.date)}d</div>`:''}<div style="color:#445566;font-size:10px">/${m.intervalDays}d</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+let tsX=0, tsId=null, swipeMoved=false, swipeOpen=new Set();
+
+function tsStart(e,id){
+  tsX=e.touches[0].clientX;
+  tsId=id;
+  swipeMoved=false;
+}
+function tsMove(e,id){
+  const dx=e.touches[0].clientX-tsX;
+  const card=document.getElementById('card-'+id);
+  if(!card)return;
+  if(dx<-5||swipeOpen.has(id)){
+    swipeMoved=true;
+    const target=swipeOpen.has(id)?Math.min(0,dx):Math.max(-80,dx);
+    if(target<=0)card.style.transform=`translateX(${target}px)`;
+    e.preventDefault();
+  }
+}
+function tsEnd(e,id){
+  const dx=e.changedTouches[0].clientX-tsX;
+  const card=document.getElementById('card-'+id);
+  if(!card)return;
+  if(dx<-40){
+    card.style.transform='translateX(-80px)';
+    swipeOpen.add(id);
+  } else if(dx>20){
+    card.style.transform='translateX(0)';
+    swipeOpen.delete(id);
+  } else if(!swipeOpen.has(id)){
+    card.style.transform='translateX(0)';
+  }
+}
+
+async function swipeDelMeter(id){
+  const m=meters.find(x=>x.id===id);
+  if(!m)return;
+  const cfg=JSON.parse(localStorage.getItem("mlog_cfg")||"{}");
+  const dbUrl=cfg.url;
+  if(!dbUrl){alert("Ingen database URL gemt");return;}
+  openConfirm(`🗑 Slet måler`,`Slet "${m.name}" (${m.location})?`,async()=>{
+    const fullUrl=dbUrl+"/meters/"+id+".json";
+    try{
+      const resp=await fetch(fullUrl,{method:"DELETE"});
+      const txt=await resp.text();
+      alert("Status: "+resp.status+" OK:"+resp.ok+"\nURL: "+fullUrl.slice(0,60)+"\nSvar: "+txt.slice(0,100));
+      if(resp.ok){
+        meters=meters.filter(x=>x.id!==id);
+        swipeOpen.delete(id);
+        toast("✓ "+m.name+" slettet!");
+        renderDash();
+        renderBadges();
+      }
+    }catch(e){
+      alert("Catch fejl: "+e.message+"\nURL: "+fullUrl.slice(0,60));
+    }
+  });
+}
+function setLoc(l){activeLoc=l;renderDash();}
+
+function openMeter(id){
+  const m=meters.find(x=>x.id===id);if(!m)return;
+  activeMeter=m;
+  document.getElementById('mIcon').textContent=m.icon;
+  document.getElementById('mName').textContent=m.name;
+  document.getElementById('mLoc').textContent='📍 '+m.location;
+  document.getElementById('mId').textContent='ID: '+m.id;
+  document.getElementById('valLbl').textContent=`Målerværdi (${m.unit})`;
+  document.getElementById('valInp').value='';
+  document.getElementById('noteInp').value='';
+  document.getElementById('imgArea').innerHTML='';
+  document.getElementById('rMeta').textContent=`Aflæser: ${CU.name} · ${new Date().toLocaleString('da-DK')}`;
+  document.getElementById('mQR').src=qr(m.id,140,'meter');
+  
+  const lr=lastR(m.id),due=isDue(m);
+  const ms=document.getElementById('mStatus');
+  ms.innerHTML=due?`<div style="text-align:center"><div style="font-size:26px">⚠️</div><div style="color:#ff6b6b;font-weight:700">Aflæsning ønsket</div>${lr?`<div style="color:#8899aa;font-size:12px;margin-top:4px">Sidst: ${fmt(lr.date)} af ${lr.user}</div>`:''}</div>`:`<div style="text-align:center"><div style="font-size:26px">✅</div><div style="color:#00e5ff;font-weight:700">Aflæst – OK</div>${lr?`<div style="color:#8899aa;font-size:12px;margin-top:4px">Sidst: ${fmt(lr.date)} af ${lr.user}</div>`:''}</div>`;
+  ms.style.background=due?'rgba(255,107,107,.1)':'rgba(0,229,255,.05)';ms.style.borderColor=due?'#ff6b6b':'#00e5ff';
+  const rs=[...readings].filter(r=>r.meterId===m.id).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  const hEl=document.getElementById('mHist');
+  if(rs.length){hEl.style.display='block';document.getElementById('mHistList').innerHTML=rs.map(r=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #141e2d"><div><span style="color:#fff;font-weight:700;font-family:monospace">${r.value} ${m.unit}</span> <span style="color:#8899aa;font-size:12px">af ${r.user}</span>${r.note?`<div style="color:#667788;font-size:11px">${r.note}</div>`:''}</div><div style="color:#556677;font-size:11px">${fmt(r.date)}</div></div>`).join('');}
+  else{hEl.style.display='none';}
+  showScreen('s-meter');
+}
+
+async function handlePhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const url=ev.target.result;
+    document.getElementById('imgArea').innerHTML=`<div style="position:relative;margin-top:10px"><img src="${url}" style="width:100%;border-radius:8px;border:1px solid #334"/><div id="aiOv" style="position:absolute;inset:0;background:rgba(10,10,20,.85);display:flex;align-items:center;justify-content:center;border-radius:8px;color:#00e5ff;font-weight:700">🤖 AI aflæser tal...</div></div>`;
+    try{
+      const resp=await fetch(WORKER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:url.split(",")[1]}},{type:"text",text:"Read the main numeric value on this meter display. Reply with ONLY digits and decimal point - no letters, no units. Example: 78700. If unclear: UKENDT"}]}]})});
+      const d=await resp.json();
+      let t=d.content?.map(b=>b.text||"").join("").trim();
+      t=t.replace(/[^0-9.,]/g,'').replace(',','.').replace(/^0+([1-9])/,'$1').replace(/^0+$/,'0');
+      document.getElementById('aiOv')?.remove();
+      if(t){document.getElementById('valInp').value=t;document.getElementById('imgArea').innerHTML+=`<div style="background:rgba(0,229,255,.1);border:1px solid #00e5ff;border-radius:6px;padding:7px 12px;margin-top:8px;font-size:13px;color:#00e5ff">✅ AI fandt: <strong>${t} ${activeMeter?.unit||""}</strong></div>`;}
+      else{document.getElementById('imgArea').innerHTML+=`<div style="background:rgba(255,107,107,.1);border:1px solid #ff6b6b;border-radius:6px;padding:7px 12px;margin-top:8px;font-size:13px;color:#ff6b6b">⚠ Kunne ikke aflæse — indtast manuelt</div>`;}
+    }catch{document.getElementById('aiOv')?.remove();document.getElementById('imgArea').innerHTML+=`<div style="background:rgba(255,107,107,.1);border:1px solid #ff6b6b;border-radius:6px;padding:7px 12px;margin-top:8px;font-size:13px;color:#ff6b6b">⚠ AI ikke tilgængelig</div>`;}
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveReading(){
+  const val=document.getElementById('valInp').value.trim(),note=document.getElementById('noteInp').value.trim();
+  if(!val||!activeMeter)return;
+  const newVal=parseFloat(val);
+  // Tjek om ny aflæsning er lavere end sidste
+  const lr=lastR(activeMeter.id);
+  if(lr){
+    const lastVal=parseFloat(lr.value);
+    if(!isNaN(lastVal)&&!isNaN(newVal)&&newVal<lastVal){
+      const ok=confirm(`⚠️ Advarsel!\n\nNy aflæsning: ${newVal} ${activeMeter.unit}\nSidste aflæsning: ${lastVal} ${activeMeter.unit}\n\nDen nye værdi er lavere end den forrige.\nEr du sikker på at tallet er korrekt?`);
+      if(!ok)return;
+    }
+  }
+  const btn=document.getElementById('saveBtn');btn.textContent='Gemmer...';btn.disabled=true;
+  try{const r={meterId:activeMeter.id,value:val,note,user:CU.name,date:new Date().toISOString()};const res=await fbP("readings",r);readings.push({...r,id:res.name});toast("✓ Aflæsning gemt!");showScreen('s-dash');renderDash();renderBadges();}
+  catch{alert("Fejl ved gemning");}
+  finally{btn.textContent='✓ Gem aflæsning';btn.disabled=false;}
+}
+
+function delMeter(){
+  if(!activeMeter){alert("Ingen aktiv måler");return;}
+  if(!isAdmin()){alert("Kun admin - rolle: "+CU?.role);return;}
+  const meterId=activeMeter.id;
+  const meterName=activeMeter.name;
+  const url=FB_URL+"/meters/"+meterId+".json";
+  openConfirm(`🗑 Slet måler`,`Slet "${meterName}"?\n\nDB URL: ${FB_URL?FB_URL.slice(0,40)+"...":"MANGLER!"}`,async()=>{
+    if(!FB_URL){alert("FEJL: Firebase URL mangler! Genindlæs siden.");return;}
+    try{
+      const resp=await fetch(url,{method:"DELETE"});
+      if(resp.ok){
+        meters=meters.filter(m=>m.id!==meterId);
+        activeMeter=null;
+        toast("✓ "+meterName+" slettet!");
+        showScreen('s-dash');
+        renderDash();
+        renderBadges();
+      }else{
+        const txt=await resp.text();
+        alert("Firebase svar "+resp.status+":\n"+txt.slice(0,200));
+      }
+    }catch(e){
+      alert("Netværksfejl:\n"+e.message);
+    }
+  });
+}
+
+function goQRMeter(){
+  const ls=["alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
+  document.getElementById('qrMLocF').innerHTML=ls.map(l=>`<option value="${l}">${l==="alle"?"Alle lokationer":l}</option>`).join('');
+  renderMQR();showScreen('s-qr-m');
+}
+function renderMQR(){const f=document.getElementById('qrMLocF')?.value||"alle";const list=f==="alle"?meters:meters.filter(m=>m.location===f);document.getElementById('mqrGrid').innerHTML=list.map(m=>`<div class="qr-item"><img src="${qr(m.id,130,'meter')}" style="width:130px;height:130px"/><div style="font-size:17px">${m.icon}</div><div style="color:#111;font-weight:700;font-size:12px">${m.name}</div><div style="color:#555;font-size:11px">${m.location}</div><div style="color:#aaa;font-size:9px;font-family:monospace">${m.id}</div></div>`).join('');}
+
+function showMHist(){
+  const ls=["alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];
+  document.getElementById('hLocF').innerHTML=ls.map(l=>`<option value="${l}">${l==="alle"?"Alle lokationer":l}</option>`).join('');
+  document.getElementById('hMF').innerHTML=`<option value="alle">Alle målere</option>`+meters.map(m=>`<option value="${m.id}">${m.icon} ${m.name} (${m.location})</option>`).join('');
+  renderMHist();showScreen('s-m-hist');
+}
+function renderMHist(){
+  const fL=document.getElementById('hLocF')?.value||"alle",fM=document.getElementById('hMF')?.value||"alle";
+  const rows=[...readings].sort((a,b)=>new Date(b.date)-new Date(a.date)).filter(r=>fM==="alle"||r.meterId===fM).filter(r=>{if(fL==="alle")return true;const m=meters.find(x=>x.id===r.meterId);return m?.location===fL;});
+  document.getElementById('mHistData').innerHTML=!rows.length?`<div style="color:#8899aa;text-align:center;padding:40px">Ingen aflæsninger</div>`:rows.map(r=>{const m=meters.find(x=>x.id===r.meterId)||{};return `<div class="card" style="border-left:3px solid #00e5ff"><div style="display:flex;justify-content:space-between"><div><div style="color:#ccd;font-weight:700">${m.icon||""} ${m.name||r.meterId} <span style="color:#556677;font-size:12px">· ${m.location||""}</span></div><div style="color:#fff;font-family:monospace;font-size:17px;margin:4px 0">${r.value} <span style="color:#8899aa;font-size:12px">${m.unit||""}</span></div><div style="color:#8899aa;font-size:12px">👤 ${r.user}</div>${r.note?`<div style="color:#667788;font-size:12px">${r.note}</div>`:''}</div><div style="color:#556677;font-size:12px">${fmt(r.date)}</div></div></div>`;}).join('');
+}
+function expMeterCSV(){const rows=[...readings].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>{const m=meters.find(x=>x.id===r.meterId)||{};return [`"${r.meterId}"`,`"${m.name||""}"`,`"${m.location||""}"`,`"${m.unit||""}"`,`"${r.user}"`,`"${fmt(r.date)}"`,`"${r.value}"`,`"${r.note||""}"`].join(",");});const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+"ID,Navn,Lokation,Enhed,Aflæst af,Dato,Værdi,Note\n"+rows.join("\n")],{type:"text/csv;charset=utf-8;"}));a.download=`maaler_${new Date().toISOString().slice(0,10)}.csv`;a.click();}
+
+// ── Meter Settings ────────────────────────────────────────────────────────────
+function showSett(){if(!isAdmin()){toast("Kun admin","#ff6b6b");return;}editMeters=meters.map(m=>({...m}));renderSFilters();renderMSett();renderUSett();showScreen('s-m-sett');}
+function renderSFilters(){const ls=["alle",...new Set(meters.map(m=>m.location).filter(Boolean).sort())];document.getElementById('sLocF').innerHTML=ls.map(l=>`<option value="${l}">${l==="alle"?"Alle lokationer":l}</option>`).join('');}
+function renderMSett(){const f=document.getElementById('sLocF')?.value||"alle";const vis=f==="alle"?editMeters:editMeters.filter(m=>m.location===f);document.getElementById('mSettList').innerHTML=vis.map(m=>{const gi=editMeters.findIndex(x=>x.id===m.id);return `<div class="card"><div style="color:#aabbcc;font-weight:700;margin-bottom:10px">${m.icon} ${m.name} <span style="color:#556677;font-size:12px">· ${m.location}</span></div><label>Navn</label><input class="inp" value="${m.name}" oninput="editMeters[${gi}].name=this.value" style="margin-bottom:8px"/><label>Lokation</label><input class="inp" value="${m.location}" oninput="editMeters[${gi}].location=this.value" style="margin-bottom:8px"/><label>Interval (dage)</label><input class="inp" type="number" value="${m.intervalDays}" oninput="editMeters[${gi}].intervalDays=parseInt(this.value)||1"/></div>`;}).join('');}
+async function saveMSett(){try{const o={};editMeters.forEach(m=>{o[m.id]=m;});await fbS("meters",o);meters=[...editMeters];toast("✓ Gemt!");showScreen('s-dash');renderDash();}catch{alert("Fejl");}}
+function selMTF(t){selMT=MT.find(x=>x.t===t)||MT[0];document.querySelectorAll('#mTypeGrid .type-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(selMT.i)));document.getElementById('aMUnit').value=selMT.u;}
+async function addMeter(){
+  if(!isAdmin()){alert("Kun admin");return;}
+  const name=document.getElementById('aMName').value.trim(),loc=document.getElementById('aMloc').value.trim(),unit=document.getElementById('aMUnit').value.trim(),days=parseInt(document.getElementById('aMDays').value)||30;
+  if(!name||!loc){alert("Udfyld navn og lokation");return;}
+  const m={id:selMT.t.toLowerCase()+"-"+Date.now(),name,type:selMT.t,icon:selMT.i,unit,location:loc,intervalDays:days};
+  try{await fbS(`meters/${m.id}`,m);meters.push(m);toast("✓ Tilføjet!");document.getElementById('aMName').value='';showScreen('s-dash');renderDash();}
+  catch{alert("Fejl");}
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+function renderUSett(){document.getElementById('uSettList').innerHTML=users.map(u=>`<div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px"><div><div style="color:#eef;font-weight:700">${u.icon||"👤"} ${u.name}</div><div style="color:#8899aa;font-size:12px">${u.role==="admin"?"⭐ Admin":"Bruger"}</div></div><div style="display:flex;gap:8px"><button class="btn btn-dark btn-sm" onclick="editU('${u.id}')">✏️</button><button class="btn btn-sm btn-red" style="border:none" onclick="delUser('${u.id}')">🗑</button></div></div>`).join('');}
+function showAddUser(){editUid=null;document.getElementById('auTitle').textContent="➕ Tilføj bruger";document.getElementById('auName').value='';document.getElementById('auPin').value='';document.getElementById('auRole').value='user';showScreen('s-adduser');}
+function editU(id){const u=users.find(x=>x.id===id);if(!u)return;editUid=id;document.getElementById('auTitle').textContent="✏️ Rediger";document.getElementById('auName').value=u.name;document.getElementById('auPin').value=u.pin;document.getElementById('auRole').value=u.role;showScreen('s-adduser');}
+async function saveUser(){const name=document.getElementById('auName').value.trim(),pin=document.getElementById('auPin').value.trim(),role=document.getElementById('auRole').value;if(!name||!pin){alert("Udfyld navn og PIN");return;}if(String(pin).length!==4||isNaN(pin)){alert("PIN skal være 4 cifre");return;}const u={id:editUid||"user-"+Date.now(),name,pin,role,icon:"👤"};try{await fbS(`users/${u.id}`,u);if(editUid){users=users.map(x=>x.id===editUid?u:x);}else{users.push(u);}toast("✓ Bruger gemt!");showSett();}catch{alert("Fejl");}}
+function delUser(id){if(users.length<=1){alert("Kan ikke slette eneste bruger");return;}const u=users.find(x=>x.id===id);if(!u)return;openConfirm(`🗑 Slet bruger`,`Er du sikker på du vil slette "${u.name}"?`,async()=>{try{await fbD(`users/${id}`);users=users.filter(u=>u.id!==id);toast("✓ Bruger slettet");renderUSett();}catch{alert("Fejl");}});}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LAGERSTYRING
+// ══════════════════════════════════════════════════════════════════════════════
+function renderStock(){
+  const low=stockItems.filter(isLow);
+  const al=document.getElementById('stockAlert');
+  if(low.length){al.innerHTML=`<div class="card" style="border-color:#ff6b6b;background:rgba(255,107,107,.08);margin-bottom:12px"><div style="color:#ff6b6b;font-weight:700;margin-bottom:8px">🔴 ${low.length} vare${low.length>1?'r':''} under minimum!</div>${low.map(i=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #2a1a1a;font-size:13px"><span style="color:#eef">${i.icon||"📦"} ${i.name}</span><span style="color:#ff6b6b;font-weight:700">${i.qty} / min ${i.minQty} ${i.unit||"stk"}</span></div>`).join('')}<button class="btn btn-full" style="background:#ff6b6b;color:#fff;border:none;margin-top:10px;font-size:13px" onclick="sendLowEmail()">📧 Send bestillingsmail</button></div>`;al.style.display='block';}
+  else{al.style.display='none';}
+  const cs=cats();
+  document.getElementById('catTabs').innerHTML=cs.map(c=>`<button class="tab yellow${activeCat===c?' active-yellow active':''}" onclick="setCat('${c}')" style="border-color:${activeCat===c?'#ffd166':'#1a2030'};color:${activeCat===c?'#ffd166':'#8899aa'}">${c}</button>`).join('');
+  const fl=activeCat==="Alle"?stockItems:stockItems.filter(i=>i.category===activeCat);
+  const lo=fl.filter(isLow),ok=fl.filter(i=>!isLow(i));
+  let h='';
+  if(lo.length){h+=`<div class="sec"><span style="color:#ff6b6b">🔴</span> Under minimum (${lo.length})</div>`+lo.map(sCard).join('');}
+  if(ok.length){h+=`<div class="sec"><span style="color:#6ddc6d">✓</span> OK beholdning (${ok.length})</div>`+ok.map(sCard).join('');}
+  if(!fl.length)h='<div style="color:#8899aa;text-align:center;padding:40px">Ingen varer — tryk ➕ for at tilføje</div>';
+  document.getElementById('stockList').innerHTML=h;
+}
+function sCard(item){const pct=Math.min(100,Math.round((item.qty/Math.max(item.maxQty,1))*100));const bc=item.qty<=item.minQty?'#ff6b6b':item.qty<item.maxQty*0.5?'#ffd166':'#6ddc6d';return `<div class="card card-tap" style="border-left:3px solid ${isLow(item)?'#ff6b6b':'#6ddc6d'}" onclick="openItem('${item.id}')"><div style="font-size:17px;margin-bottom:3px">${item.icon||"📦"} <span style="color:#eef;font-size:15px;font-weight:700">${item.name}</span></div><div style="color:#8899aa;font-size:12px">${item.category||""} ${item.location?'· '+item.location:''}</div><div class="stock-bar-bg"><div class="stock-bar" style="width:${pct}%;background:${bc}"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;color:#8899aa"><span>Min: ${item.minQty}</span><span style="color:${bc};font-weight:700">${item.qty} ${item.unit||"stk"}</span><span>Max: ${item.maxQty}</span></div></div>`;}
+function setCat(c){activeCat=c;renderStock();}
+
+function openItem(id){
+  const item=stockItems.find(x=>x.id===id);if(!item)return;
+  activeItem=item;
+  document.getElementById('iIcon').textContent=item.icon||"📦";
+  document.getElementById('iName').textContent=item.name;
+  document.getElementById('iCat').textContent=(item.category||"")+(item.location?" · "+item.location:"");
+  document.getElementById('iDelBtn').style.display=isAdmin()?'':'none';
+  document.getElementById('takeQty').value='';document.getElementById('addQty').value='';
+  document.getElementById('takeNote').value='';document.getElementById('addNote').value='';
+  renderItemSt(item);
+  const logs=[...stockLog].filter(l=>l.itemId===item.id).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  const lc=document.getElementById('iLogCard');
+  if(logs.length){lc.style.display='block';document.getElementById('iLog').innerHTML=logs.map(l=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #141e2d;font-size:13px"><div><span style="color:${l.type==='take'?'#ff6b6b':'#6ddc6d'};font-weight:700">${l.type==='take'?'📤 -':'📥 +'}${l.qty} ${item.unit||"stk"}</span> <span style="color:#8899aa">af ${l.user}</span>${l.note?`<div style="color:#667788;font-size:11px">${l.note}</div>`:''}</div><div style="color:#556677;font-size:11px">${fmt(l.date)}</div></div>`).join('');}
+  else{lc.style.display='none';}
+  showScreen('s-item');
+}
+function renderItemSt(item){const pct=Math.min(100,Math.round((item.qty/Math.max(item.maxQty,1))*100));const bc=item.qty<=item.minQty?'#ff6b6b':item.qty<item.maxQty*0.5?'#ffd166':'#6ddc6d';const low=isLow(item);document.getElementById('iStatus').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div><div style="color:${bc};font-size:28px;font-weight:900">${item.qty} <span style="font-size:14px;font-weight:400">${item.unit||"stk"}</span></div><div style="color:#8899aa;font-size:12px">Min: ${item.minQty} · Max: ${item.maxQty} ${item.unit||"stk"}</div></div><div style="text-align:center"><div style="font-size:26px">${low?'🔴':'✅'}</div><div style="color:${low?'#ff6b6b':'#6ddc6d'};font-size:12px;font-weight:700">${low?'Under min':'OK'}</div></div></div><div class="stock-bar-bg" style="height:12px"><div class="stock-bar" style="width:${pct}%;background:${bc}"></div></div>${item.location?`<div style="color:#8899aa;font-size:12px;margin-top:6px">📍 ${item.location}</div>`:''}`;document.getElementById('iStatus').style.borderColor=low?'#ff6b6b':'#6ddc6d';}
+
+async function takeStock(){
+  const qty=parseInt(document.getElementById('takeQty').value),note=document.getElementById('takeNote').value.trim();
+  if(!qty||qty<=0){alert("Indtast antal");return;}
+  if(qty>activeItem.qty){alert(`Kun ${activeItem.qty} ${activeItem.unit||"stk"} på lager`);return;}
+  const nq=activeItem.qty-qty;
+  try{
+    await fbU(`stockItems/${activeItem.id}`,{qty:nq});
+    const le={itemId:activeItem.id,itemName:activeItem.name,type:'take',qty,user:CU.name,date:new Date().toISOString(),note,qtyAfter:nq};
+    const res=await fbP("stockLog",le);stockLog.push({...le,id:res.name});
+    stockItems=stockItems.map(i=>i.id===activeItem.id?{...i,qty:nq}:i);
+    activeItem={...activeItem,qty:nq};
+    renderItemSt(activeItem);document.getElementById('takeQty').value='';
+    toast(`✓ ${qty} ${activeItem.unit||"stk"} taget`);
+    if(nq<=activeItem.minQty&&emails.length)sendLowEmail(true);
+    renderStock();renderBadges();
+  }catch(e){alert("Fejl: "+e.message);}
+}
+
+async function addStock(){
+  const qty=parseInt(document.getElementById('addQty').value),note=document.getElementById('addNote').value.trim();
+  if(!qty||qty<=0){alert("Indtast antal");return;}
+  const nq=Math.min(activeItem.qty+qty,activeItem.maxQty);
+  try{
+    await fbU(`stockItems/${activeItem.id}`,{qty:nq});
+    const le={itemId:activeItem.id,itemName:activeItem.name,type:'add',qty,user:CU.name,date:new Date().toISOString(),note,qtyAfter:nq};
+    const res=await fbP("stockLog",le);stockLog.push({...le,id:res.name});
+    stockItems=stockItems.map(i=>i.id===activeItem.id?{...i,qty:nq}:i);
+    activeItem={...activeItem,qty:nq};
+    renderItemSt(activeItem);document.getElementById('addQty').value='';
+    toast(`✓ ${qty} ${activeItem.unit||"stk"} lagt på lager`);
+    renderStock();renderBadges();
+  }catch(e){alert("Fejl: "+e.message);}
+}
+
+function delItem(){if(!activeItem||!isAdmin())return;openConfirm(`🗑 Slet vare`,`Er du sikker på du vil slette "${activeItem.name}"?`,async()=>{try{await fbD(`stockItems/${activeItem.id}`);stockItems=stockItems.filter(i=>i.id!==activeItem.id);toast("✓ Vare slettet");showScreen('s-stock');renderStock();}catch(e){alert("Fejl: "+e.message);}});}
+
+async function addItem(){
+  if(!isAdmin()){alert("Kun admin");return;}
+  const name=document.getElementById('niName').value.trim();if(!name){alert("Udfyld varenavn");return;}
+  const item={id:"item-"+Date.now(),name,category:document.getElementById('niCat').value.trim(),unit:document.getElementById('niUnit').value.trim()||"stk",qty:parseInt(document.getElementById('niQty').value)||0,minQty:parseInt(document.getElementById('niMin').value)||5,maxQty:parseInt(document.getElementById('niMax').value)||20,location:document.getElementById('niLoc').value.trim(),icon:document.getElementById('niIcon').value.trim()||"📦"};
+  try{await fbS(`stockItems/${item.id}`,item);stockItems.push(item);toast("✓ Vare tilføjet!");document.getElementById('niName').value='';showScreen('s-stock');renderStock();}
+  catch{alert("Fejl");}
+}
+
+// ── Stock QR ──────────────────────────────────────────────────────────────────
+function goQRStock(){const cs=["alle",...new Set(stockItems.map(i=>i.category).filter(Boolean).sort())];document.getElementById('qrSCatF').innerHTML=cs.map(c=>`<option value="${c}">${c==="alle"?"Alle kategorier":c}</option>`).join('');renderSQR();showScreen('s-qr-s');}
+function renderSQR(){const f=document.getElementById('qrSCatF')?.value||"alle";const list=f==="alle"?stockItems:stockItems.filter(i=>i.category===f);document.getElementById('sqrGrid').innerHTML=list.map(i=>`<div class="qr-item"><img src="${qr(i.id,130,'stock')}" style="width:130px;height:130px"/><div style="font-size:17px">${i.icon||"📦"}</div><div style="color:#111;font-weight:700;font-size:12px">${i.name}</div><div style="color:#555;font-size:11px">${i.category||""}</div><div style="color:#aaa;font-size:9px;font-family:monospace">${i.id}</div></div>`).join('');}
+
+// ── Stock History ─────────────────────────────────────────────────────────────
+function showSHist(){const cs=["alle",...new Set(stockItems.map(i=>i.category).filter(Boolean).sort())];document.getElementById('sHistCat').innerHTML=cs.map(c=>`<option value="${c}">${c==="alle"?"Alle kategorier":c}</option>`).join('');renderSHist();showScreen('s-stock-hist');}
+function renderSHist(){const f=document.getElementById('sHistCat')?.value||"alle";const rows=[...stockLog].sort((a,b)=>new Date(b.date)-new Date(a.date)).filter(r=>{if(f==="alle")return true;const i=stockItems.find(x=>x.id===r.itemId);return i?.category===f;});document.getElementById('sHistData').innerHTML=!rows.length?`<div style="color:#8899aa;text-align:center;padding:40px">Ingen bevægelser</div>`:rows.map(r=>`<div class="card" style="border-left:3px solid ${r.type==='take'?'#ff6b6b':'#6ddc6d'}"><div style="display:flex;justify-content:space-between"><div><div style="color:#ccd;font-weight:700">📦 ${r.itemName||r.itemId}</div><div style="color:${r.type==='take'?'#ff6b6b':'#6ddc6d'};font-weight:700;font-size:15px;margin:4px 0">${r.type==='take'?'📤 -':'📥 +'}${r.qty} stk → ${r.qtyAfter} tilbage</div><div style="color:#8899aa;font-size:12px">👤 ${r.user}</div>${r.note?`<div style="color:#667788;font-size:12px">${r.note}</div>`:''}</div><div style="color:#556677;font-size:12px">${fmt(r.date)}</div></div></div>`).join('');}
+function expStockCSV(){const rows=[...stockLog].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(r=>`"${r.itemId}","${r.itemName||""}","${r.type==='take'?'Taget':'Tilføjet'}","${r.qty}","${r.qtyAfter}","${r.user}","${fmt(r.date)}","${r.note||""}"`);const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+"Vare ID,Varenavn,Type,Antal,Beholdning efter,Bruger,Dato,Note\n"+rows.join("\n")],{type:"text/csv;charset=utf-8;"}));a.download=`lager_${new Date().toISOString().slice(0,10)}.csv`;a.click();}
+
+// ── Email ─────────────────────────────────────────────────────────────────────
+function renderEmails(){document.getElementById('emailList').innerHTML=emails.length?emails.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a2030"><span style="color:#ccd;font-size:14px">📧 ${e.email}</span><button class="btn btn-sm btn-red" style="border:none" onclick="removeEmail('${e.id}')">✕</button></div>`).join(''):`<div style="color:#8899aa;font-size:13px;padding:8px 0">Ingen email-adresser endnu</div>`;}
+async function addEmail(){const email=document.getElementById('newEmail').value.trim();if(!email||!email.includes('@')){alert("Ugyldig email");return;}const e={id:"email-"+Date.now(),email};try{await fbS(`emailRecipients/${e.id}`,e);emails.push(e);document.getElementById('newEmail').value='';renderEmails();toast("✓ Email tilføjet!");}catch{alert("Fejl");}}
+async function removeEmail(id){try{await fbD(`emailRecipients/${id}`);emails=emails.filter(e=>e.id!==id);renderEmails();toast("✓ Fjernet");}catch{alert("Fejl");}}
+
+async function sendLowEmail(auto=false){
+  if(!emails.length){if(!auto)alert("Tilføj email-adresser under Indstillinger");return;}
+  const low=stockItems.filter(isLow);
+  if(!low.length&&!auto){toast("Ingen varer under minimum");return;}
+  const subject=`🔴 Lager alarm — ${low.length} vare${low.length!==1?'r':''} skal bestilles`;
+  const body=`Hej,\n\nFølgende varer er under minimum og skal bestilles:\n\n`+low.map(i=>`• ${i.name}: ${i.qty} ${i.unit||"stk"} tilbage (minimum: ${i.minQty})\n  Bestil: ${i.maxQty-i.qty} ${i.unit||"stk"} for at fylde op til max ${i.maxQty}`).join('\n\n')+`\n\nSendt fra Driften App · ${new Date().toLocaleString('da-DK')}`;
+  try{await fetch(WORKER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"sendEmail",to:emails.map(e=>e.email),subject,body})});if(!auto)toast("✓ Email sendt!");}
+  catch(e){if(!auto)alert("Fejl: "+e.message);}
+}
+async function sendTestEmail(){if(!emails.length){alert("Tilføj email-adresser først");return;}try{await fetch(WORKER,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"sendEmail",to:emails.map(e=>e.email),subject:"✅ Test fra Driften App",body:`Hej!\n\nDette er en test-email.\n\nAlt fungerer korrekt.\n\n${new Date().toLocaleString('da-DK')}`})});toast("✓ Test-email sendt!");}catch(e){alert("Fejl: "+e.message);}}
+
+function renderSSett(){
+  renderEmails();
+  document.getElementById('sSettList').innerHTML=stockItems.map(item=>`<div class="card"><div style="color:#aabbcc;font-weight:700;margin-bottom:10px">${item.icon||"📦"} ${item.name}</div><label>Minimum</label><input class="inp" type="number" value="${item.minQty}" onchange="updLimits('${item.id}','minQty',this.value)" style="margin-bottom:8px"/><label>Maximum</label><input class="inp" type="number" value="${item.maxQty}" onchange="updLimits('${item.id}','maxQty',this.value)"/></div>`).join('');
+}
+async function updLimits(id,field,val){const v=parseInt(val)||0;try{await fbU(`stockItems/${id}`,{[field]:v});stockItems=stockItems.map(i=>i.id===id?{...i,[field]:v}:i);}catch{}}
+
+// ── URL params ────────────────────────────────────────────────────────────────
+function checkURL(){
+  const p=new URLSearchParams(window.location.search);
+  const mId=p.get('meter'),sId=p.get('stock');
+  if(mId&&meters.find(m=>m.id===mId)){enterModule('meter');openMeter(mId);setTimeout(()=>{try{document.getElementById('photoInp').click();}catch(e){}},800);}
+  else if(sId&&stockItems.find(i=>i.id===sId)){enterModule('stock');openItem(sId);}
+}
+
+// ── PWA ───────────────────────────────────────────────────────────────────────
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+
+init().then(()=>{if(CU)checkURL();});
+</script>
+</body>
+</html>
