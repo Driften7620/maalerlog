@@ -1,6 +1,0 @@
-// Version 17 - print + desktop layout
-const CACHE = "driften-v17";
-const APP_SHELL = ["./","./index.html","./manifest.json"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(async c=>{await Promise.all(APP_SHELL.map(u=>c.add(u).catch(err=>console.warn("Kunne ikke cache",u,err))));}));self.skipWaiting();});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;const url=new URL(e.request.url);const isData=url.hostname.includes("firebaseio.com")||url.hostname.includes("workers.dev")||url.hostname.includes("qrserver.com")||url.hostname.includes("open-meteo.com")||url.hostname.includes("energidataservice.dk")||url.hostname.includes("githubusercontent.com");if(isData)return;e.respondWith(caches.match(e.request).then(cached=>{const net=fetch(e.request).then(res=>{if(res&&res.ok){const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}return res;}).catch(()=>null);if(cached){net.catch(()=>{});return cached;}return net.then(res=>res||new Response("<h1>Offline</h1>",{status:503,headers:{"Content-Type":"text/html;charset=utf-8"}}));}));});
