@@ -2,7 +2,7 @@
 // Version: 2026-07-03-v7
 // Opdater CACHE_NAME ved hver ny deploy af index.html
 
-const CACHE_NAME = 'driften-2026-07-06-v2';
+const CACHE_NAME = 'driften-2026-07-06-v4';
 const APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', event => {

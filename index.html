@@ -586,7 +586,8 @@ body.non-admin .admin-only{display:none!important}
   </div>
   <div class="sec">⚡ Målere</div>
   <select class="inp" id="sLocF" onchange="renderMSett()" style="margin-bottom:14px"></select>
-  <div id="mSettList"></div>
+  <button class="btn btn-dark btn-full" id="mSettToggleBtn" onclick="toggleMSettList()" style="margin-bottom:14px">▶ Vis målere</button>
+  <div id="mSettList" style="display:none"></div>
   <button class="btn btn-full" onclick="saveMSett()" style="margin-top:4px;margin-bottom:20px">Gem ændringer</button>
 
   <div class="sec">🔁 Aflæsningsrunde</div>
@@ -3620,6 +3621,8 @@ function tsEnd(e,id){
   } else if(!swipeOpen.has(id)){
     card.style.transform='translateX(0)';
   }
+  // Lille naturlig fingerbevægelse under et almindeligt tryk skal ikke tælle som swipe
+  if(Math.abs(dx)<15)swipeMoved=false;
 }
 
 
@@ -4530,7 +4533,8 @@ async function setAllMetersDue(){
         toast("✓ Alle målere er markeret som skal aflæses");
         renderDash();renderBadges();
       }catch(e){if(isOfflineError(e)){offlineWriteToast();}else{alert("Fejl: "+e.message);}}
-    }
+    },
+    "Aflæs"
   );
 }
 
@@ -4544,6 +4548,9 @@ async function editLocation(oldName){
   if(allLocs.includes(name)){alert("Lokationen findes allerede");return;}
   try{
     for(const m of meters.filter(m=>m.location===oldName)){await fbU(`meters/${m.id}`,{location:name});m.location=name;}
+    // VIGTIGT: editMeters er en separat kopi som 'Gem ændringer' skriver fra - skal opdateres
+    // med det samme, ellers overskriver et senere tryk på 'Gem ændringer' omdøbningen igen.
+    for(const em of editMeters){if(em.location===oldName)em.location=name;}
     for(const x of manuals.filter(x=>x.location===oldName)){await fbU(`manuals/${x.id}`,{location:name});x.location=name;}
     for(const x of sdsItems.filter(x=>x.location===oldName)){await fbU(`sdsItems/${x.id}`,{location:name});x.location=name;}
     for(const x of equipment.filter(x=>x.location===oldName)){await fbU(`equipment/${x.id}`,{location:name});x.location=name;}
@@ -4638,7 +4645,15 @@ function delLocation(loc){
   );
 }
 
-function showSett(){if(!isAdmin()){toast("Kun admin","#ff6b6b");return;}editMeters=meters.map(m=>({...m}));renderSFilters();renderMSett();renderUSett();renderLocSett();renderBackupEmails();showScreen('s-m-sett');}
+function toggleMSettList(){
+  const el=document.getElementById('mSettList');
+  const btn=document.getElementById('mSettToggleBtn');
+  if(!el||!btn)return;
+  const show=el.style.display==='none';
+  el.style.display=show?'':'none';
+  btn.textContent=show?'▼ Skjul målere':'▶ Vis målere';
+}
+function showSett(){if(!isAdmin()){toast("Kun admin","#ff6b6b");return;}editMeters=meters.map(m=>({...m}));renderSFilters();renderMSett();renderUSett();renderLocSett();renderBackupEmails();const el=document.getElementById('mSettList'),btn=document.getElementById('mSettToggleBtn');if(el)el.style.display='none';if(btn)btn.textContent='▶ Vis målere';showScreen('s-m-sett');}
 
 function toggleIntervalType(){
   const type=document.getElementById('aMIntervalType')?.value;
