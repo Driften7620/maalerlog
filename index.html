@@ -589,6 +589,14 @@ body.non-admin .admin-only{display:none!important}
   <div id="mSettList"></div>
   <button class="btn btn-full" onclick="saveMSett()" style="margin-top:4px;margin-bottom:20px">Gem ændringer</button>
 
+  <div class="sec">🔁 Aflæsningsrunde</div>
+  <div class="card" style="margin-bottom:20px">
+    <div style="color:#8899aa;font-size:13px;margin-bottom:14px;line-height:1.6">
+      Start en ny aflæsningsrunde — markerer alle målere som "skal aflæses nu", uanset deres normale interval. Sletter ingen data eller historik.
+    </div>
+    <button class="btn btn-full" style="background:#ff9f43;color:#0a0a0f;border:none" onclick="setAllMetersDue()">🔁 Marker alle målere som skal aflæses</button>
+  </div>
+
   <div class="sec">📋 Importér målere fra liste/Excel-foto</div>
   <div class="card" style="margin-bottom:20px">
     <div style="color:#8899aa;font-size:13px;margin-bottom:14px;line-height:1.6">
@@ -2683,7 +2691,7 @@ driftlogNotes=[], driftlogEmner=[];
   inspectors=[], inspectTemplates=[], inspectLog=[], inspectEmails=[],
   activeInspectEquip=null, activeTemplate=null, editTemplateId=null, editTplItems=[],
   inspectChecks={}, inspectPhotoData=null, activeInspLocFilter='Alle';
-let CU=null, activeMeter=null, activeItem=null, activeLoc="Alle", activeCat="Alle", overdueMarginHours=24;
+let CU=null, activeMeter=null, activeItem=null, activeLoc="Alle", activeCat="Alle", overdueMarginHours=24, meterRoundStart=null;
 let curMod="meter", pinTarget=null, pinBuf="", scanMode="meter";
 let editMeters=[], editUid=null, scanStream=null, scanTimer=null;
 
@@ -2718,6 +2726,8 @@ const lastR=id=>[...readings].filter(r=>r.meterId===id).sort((a,b)=>new Date(b.d
 const isDue=m=>{
   const lr=lastR(m.id);
   if(!lr)return true;
+  // Hvis der er trykket "Alle målere skal aflæses" siden sidste aflæsning af DENNE måler, er den due
+  if(meterRoundStart&&new Date(lr.date)<new Date(meterRoundStart))return true;
   const type=m.intervalType||'days';
   if(type==='monthly'){
     // Due if we haven't read this month
@@ -3119,7 +3129,7 @@ async function init(){
     meters=md?Object.values(md):[];
 
     // Hent alt resterende data parallelt for hurtigere init
-    const [rd,ud0,sd,sld,ed,ld,slocD,rgD,rlD,rlogD,reD,dlNotesD,dlEmnerD,manD,sdsD,jobsD,tasksD,eqD,eqLoanD,eqResD,eqEmD,eqSettD,bkEmD,bkMeta,inspD,tplD,ilogD,ieD]=await Promise.all([
+    const [rd,ud0,sd,sld,ed,ld,slocD,rgD,rlD,rlogD,reD,dlNotesD,dlEmnerD,manD,sdsD,jobsD,tasksD,eqD,eqLoanD,eqResD,eqEmD,eqSettD,bkEmD,bkMeta,inspD,tplD,ilogD,ieD,mrsD]=await Promise.all([
       fbGS("readings"),fbGS("users"),fbGS("stockItems"),fbGS("stockLog"),
       fbGS("emailRecipients"),fbGS("locations"),fbGS("stockLocations"),
       fbGS("roundGroups"),fbGS("roundLocs"),fbGS("roundLog"),fbGS("roundEmails"),
@@ -3127,8 +3137,10 @@ async function init(){
       fbGS("manuals"),fbGS("sdsItems"),fbGS("jobs"),fbGS("tasks"),
       fbGS("equipment"),fbGS("equipLoans"),fbGS("equipReservations"),fbGS("equipEmails"),fbGS("equipSettings"),
       fbGS("backupEmails"),fbGS("backupMeta"),
-      fbGS("inspectors"),fbGS("inspectTemplates"),fbGS("inspectLog"),fbGS("inspectEmails")
+      fbGS("inspectors"),fbGS("inspectTemplates"),fbGS("inspectLog"),fbGS("inspectEmails"),
+      fbGS("meterRoundStart")
     ]);
+    meterRoundStart=mrsD||null;
 
     readings=rd?Object.values(rd):[];
     let ud=ud0;
@@ -3225,6 +3237,7 @@ async function poll(){
     const eqResD=await fbGS("equipReservations");equipReservations=eqResD?Object.values(eqResD):[];
     const eqEmD=await fbGS("equipEmails");equipEmails=eqEmD?Object.values(eqEmD):[];
     const eqSettD=await fbGS("equipSettings");if(eqSettD?.overdueMarginHours!==undefined)overdueMarginHours=eqSettD.overdueMarginHours;
+    meterRoundStart=await fbGS("meterRoundStart")||null;
     const bkEmD=await fbGS("backupEmails");backupEmails=bkEmD?Object.values(bkEmD):[];
     const bkMeta=await fbGS("backupMeta");lastBackupAt=bkMeta?.lastSent||null;
     const inspD=await fbGS("inspectors");inspectors=inspD?Object.values(inspD).map(x=>x.userId):[];
@@ -4480,8 +4493,9 @@ function renderLocSett(){
         ontouchmove="ltsMove(event,'${safeId}')"
         ontouchend="ltsEnd(event,'${safeId}')">
         <span style="font-size:16px">📍</span>
-        <span style="color:#eef;font-weight:700">${loc}</span>
+        <span style="color:#eef;font-weight:700;flex:1">${loc}</span>
         <span style="color:#8899aa;font-size:12px">${meters.filter(m=>m.location===loc).length} målere</span>
+        <button onclick="editLocation('${loc}')" style="background:none;border:none;color:#00e5ff;font-size:16px;padding:4px 8px;cursor:pointer" title="Rediger navn">✏️</button>
       </div>
     </div>`;
   }).join('');
@@ -4501,6 +4515,48 @@ function ltsEnd(e,id){
   if(!c)return;
   if(dx<-40){c.style.transform='translateX(-80px)';lswOpen.add(id);}
   else if(dx>20){c.style.transform='translateX(0)';lswOpen.delete(id);}
+}
+
+async function setAllMetersDue(){
+  if(!isAdmin()){toast("Kun admin","#ff6b6b");return;}
+  openConfirm(
+    "🔁 Start ny aflæsningsrunde",
+    `Marker alle ${meters.length} målere som "skal aflæses nu"?\n\nDette sletter ingen data eller historik — det nulstiller bare hvornår målerne næste gang vises som forfaldne.`,
+    async()=>{
+      try{
+        const now=new Date().toISOString();
+        await fbS("meterRoundStart",now);
+        meterRoundStart=now;
+        toast("✓ Alle målere er markeret som skal aflæses");
+        renderDash();renderBadges();
+      }catch(e){if(isOfflineError(e)){offlineWriteToast();}else{alert("Fejl: "+e.message);}}
+    }
+  );
+}
+
+async function editLocation(oldName){
+  if(!isAdmin()){toast("Kun admin","#ff6b6b");return;}
+  const input=prompt("Nyt navn for lokationen:",oldName);
+  if(input===null)return;
+  const name=input.trim();
+  if(!name||name===oldName)return;
+  const allLocs=[...new Set([...meters.map(m=>m.location),...savedLocs])].filter(Boolean);
+  if(allLocs.includes(name)){alert("Lokationen findes allerede");return;}
+  try{
+    for(const m of meters.filter(m=>m.location===oldName)){await fbU(`meters/${m.id}`,{location:name});m.location=name;}
+    for(const x of manuals.filter(x=>x.location===oldName)){await fbU(`manuals/${x.id}`,{location:name});x.location=name;}
+    for(const x of sdsItems.filter(x=>x.location===oldName)){await fbU(`sdsItems/${x.id}`,{location:name});x.location=name;}
+    for(const x of equipment.filter(x=>x.location===oldName)){await fbU(`equipment/${x.id}`,{location:name});x.location=name;}
+    const locsData=await fetch(FORCED_CFG.url+"/locations.json").then(r=>r.json());
+    if(locsData){
+      for(const [key,val] of Object.entries(locsData)){
+        if(val.name===oldName){await fbU(`locations/${key}`,{name});}
+      }
+    }
+    savedLocs=savedLocs.map(l=>l===oldName?name:l);
+    toast(`✓ Lokation omdøbt til '${name}'`);
+    renderLocSett();renderSFilters();renderMSett();renderDash();renderBadges();
+  }catch(e){if(isOfflineError(e)){offlineWriteToast();}else{alert("Fejl: "+e.message);}}
 }
 
 async function addLocation(){
